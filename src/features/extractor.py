@@ -73,9 +73,12 @@ class HandFeatureExtractor:
         current_size = feats['tip2wrist']
         if self.prev_size is not None:
             # Magnitude of change
-            feats['velocity_size'] = abs(current_size - self.prev_size)
+            feats['raw_velocity_size'] = abs(current_size - self.prev_size)
         else:
-            feats['velocity_size'] = 0.0
+            feats['raw_velocity_size'] = 0.0
+
+        # Initialize final feature with raw value (will be smoothed if history sufficient)
+        feats['velocity_size'] = feats['raw_velocity_size']
 
         # Update state
         self.prev_tip = tip
@@ -89,6 +92,11 @@ class HandFeatureExtractor:
             disps = [f['disp'] for f in self.history]
             feats['velocity_disp'] = np.mean(disps)
 
+            # Smooth 'velocity_size' -> MATCHING REQUIREMENT
+            # We reconstruct the raw size changes from history to smooth them
+            raw_size_changes = [f['raw_velocity_size'] for f in self.history]
+            feats['velocity_size'] = np.mean(raw_size_changes)  # Overwrite with smoothed value
+
             # Acceleration: change in smoothed velocity
             # We need the previous frame's smoothed velocity.
             # Since we just calculated current, we can try to retrieve prev from history if we stored it,
@@ -101,6 +109,7 @@ class HandFeatureExtractor:
             feats['acceleration_disp'] = disps[-1] - disps[-2] # diff of disp
         else:
             feats['velocity_disp'] = feats['disp']
+            # feats['velocity_size'] remains instantaneous for first frame
             feats['acceleration_disp'] = 0.0
 
         # Return vector in exact order required by model

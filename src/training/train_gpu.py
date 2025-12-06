@@ -27,6 +27,28 @@ def load_and_clean_data():
     # Note: If 'velocity_disp' etc aren't in CSV, we must generate them here
     # mirroring extractor.py logic. Assuming they exist based on prompt context.
 
+    # --- SYNTHESIS LOGIC START ---
+    # Ensure temporal features exist if they are missing
+    if 'velocity_disp' not in df.columns:
+        print("Synthesizing temporal features...")
+        # Assuming 'disp' exists or needs calculation.
+        # If 'disp' is missing, calculate it from tip coordinates between rows.
+        # This requires the CSV to be time-ordered per recording session.
+
+        # Simple rolling mean for smoothing (Window=10 matches extractor buffer)
+        df['velocity_disp'] = df['disp'].rolling(window=10, min_periods=1).mean()
+
+        # Acceleration: Difference of 'disp' (matches extractor logic)
+        df['acceleration_disp'] = df['disp'].diff().fillna(0)
+
+        # Velocity Size: Smoothed change in tip2wrist
+        # Calculate raw change first if needed
+        if 'velocity_size' not in df.columns:
+             # Assuming tip2wrist exists
+             df['size_change'] = df['tip2wrist'].diff().abs().fillna(0)
+             df['velocity_size'] = df['size_change'].rolling(window=10, min_periods=1).mean()
+    # --- SYNTHESIS LOGIC END ---
+
     # Check for missing columns
     missing = [c for c in TARGET_COLS if c not in df.columns]
     if missing:
