@@ -1,20 +1,33 @@
 import numpy as np
 from collections import deque
 
+class QueuedList:
+    """Helper to mimic the rolling buffer logic from legacy code."""
+    def __init__(self, maxlen=10):
+        self.data = deque(maxlen=maxlen)
+
+    def append(self, item):
+        self.data.append(item)
+
+    def get_mean(self):
+        if not self.data: return 0.0
+        return sum(self.data) / len(self.data)
+
 class HandFeatureExtractor:
     """
     Centralized Source of Truth for Feature Engineering.
-    Used by both Training Pipeline (CSV processing) and Runtime (Live Camera).
+    Strictly implements the legacy 'append_dataset' logic for parity.
     """
     def __init__(self, buffer_size=10, ref_width=1280, ref_height=720):
         self.ref_width = ref_width
         self.ref_height = ref_height
         self.buffer_size = buffer_size
 
-        # State buffers for smoothing/derivatives
-        self.history = deque(maxlen=buffer_size)
-        self.prev_tip = None
-        self.prev_size = None
+        # Legacy State Logic
+        self.old_coor = None
+        self.ql_disp = QueuedList(maxlen=buffer_size)
+        self.ql_size = QueuedList(maxlen=buffer_size)
+        self.elapsed_frames = 0
 
     def _to_pixel(self, landmark):
         """Converts normalized MediaPipe landmark to pixel coordinates."""
@@ -24,25 +37,20 @@ class HandFeatureExtractor:
         ])
 
     def _get_euclidean(self, p1, p2):
-        """Matches the prompt's int-cast logic: int(p1[0]-p2[0])**2 ..."""
-        # p1 and p2 are already numpy arrays of pixels from _to_pixel
-        # We cast the difference to int as per "reference logic"
-        dx = int(p1[0] - p2[0])
-        dy = int(p1[1] - p2[1])
-        return np.sqrt(dx**2 + dy**2)
+        """Matches legacy: int(p1[0]-p2[0])**2 + int(p1[1]-p2[1])**2 ..."""
+        x = int(p1[0] - p2[0]) ** 2
+        y = int(p1[1] - p2[1]) ** 2
+        return np.sqrt(x + y)
 
     def process_live(self, landmarks, distance_cm=115.0):
         """
         Process a live MediaPipe landmark list.
-        Returns: dict of features matching the training columns.
+        Returns: feature vector array.
         """
         if not landmarks:
             return None
 
-        # 1. Convert critical landmarks to pixels
-        # Indices: 0=Wrist, 4=ThumbTip, 8=IndexTip, 12=MidTip, 16=RingTip, 20=PinkyTip
-        # Joints for Index: 5=MCP, 6=PIP, 7=DIP, 8=TIP
-        # Note: landmarks is iterable of normalized landmarks
+        # 1. Convert landmarks
         try:
             wrist = self._to_pixel(landmarks[0])
             tip = self._to_pixel(landmarks[8])
@@ -50,83 +58,57 @@ class HandFeatureExtractor:
             pip = self._to_pixel(landmarks[6])
             mcp = self._to_pixel(landmarks[5])
         except (IndexError, AttributeError):
-            # Handle cases where landmarks might be partial or malformed
             return None
 
-        # 2. Calculate Base Distances (The "hand_size" proxies)
-        feats = {
-            'tip2dip': self._get_euclidean(tip, dip),
-            'tip2pip': self._get_euclidean(tip, pip),
-            'tip2mcp': self._get_euclidean(tip, mcp),
-            'tip2wrist': self._get_euclidean(tip, wrist),
-            'distance_cm': distance_cm  # Pass-through from calibration/aruco
-        }
+        new_coor = tip # Index Tip is the reference coordinate
 
-        # 3. Calculate Derivatives (Velocity/Accel)
-        # Displacement (Instantaneous speed of tip)
-        if self.prev_tip is not None:
-            feats['disp'] = self._get_euclidean(tip, self.prev_tip)
+        # 2. Calculate Distances (Legacy Loop)
+        indices_coords = [dip, pip, mcp, wrist]
+        keys = ['tip2dip', 'tip2pip', 'tip2mcp', 'tip2wrist']
+        feats = {}
+
+        total_size_acc = 0.0
+        for i, coord in enumerate(indices_coords):
+            dist = self._get_euclidean(new_coor, coord)
+            feats[keys[i]] = dist
+            total_size_acc += dist
+
+        # 3. Calculate Disp & Velocity Logic
+        disp = 0.0
+        accuracy = 0.0 # This is 'acceleration_disp' in legacy naming
+
+        if self.elapsed_frames < 1 or self.old_coor is None:
+            self.ql_disp.append(0)
         else:
-            feats['disp'] = 0.0
+            disp = self._get_euclidean(self.old_coor, new_coor)
+            previous_velocity = self.ql_disp.get_mean()
+            self.ql_disp.append(disp)
+            new_velocity = self.ql_disp.get_mean()
+            # accuracy = previous_velocity - new_velocity
+            # (Matches legacy code exactly, though physically this is deceleration)
+            accuracy = previous_velocity - new_velocity
 
-        # Velocity Size (Change in tip2wrist size)
-        current_size = feats['tip2wrist']
-        if self.prev_size is not None:
-            # Magnitude of change
-            feats['raw_velocity_size'] = abs(current_size - self.prev_size)
-        else:
-            feats['raw_velocity_size'] = 0.0
+        # 4. Calculate Size Metric
+        # ql_size appends the AVERAGE of the 4 distances (sum / 4)
+        avg_size_current = total_size_acc / 4.0
+        self.ql_size.append(avg_size_current)
 
-        # Initialize final feature with raw value (will be smoothed if history sufficient)
-        feats['velocity_size'] = feats['raw_velocity_size']
+        # 5. Populate Feature Dictionary
+        feats['disp'] = disp
+        feats['acceleration_disp'] = accuracy
+        feats['velocity_disp'] = self.ql_disp.get_mean()
+        feats['velocity_size'] = self.ql_size.get_mean()
+        feats['distance_cm'] = distance_cm
 
-        # Update state
-        self.prev_tip = tip
-        self.prev_size = current_size
-        self.history.append(feats)
+        # Update State
+        self.old_coor = new_coor
+        self.elapsed_frames += 1
 
-        # 4. Smooth / Rolling Aggregations
-        # We need velocity_disp (smoothed disp) and acceleration_disp
-        if len(self.history) >= 2:
-            # Simple moving average of 'disp'
-            disps = [f['disp'] for f in self.history]
-            feats['velocity_disp'] = np.mean(disps)
-
-            # Smooth 'velocity_size' -> MATCHING REQUIREMENT
-            # We reconstruct the raw size changes from history to smooth them
-            raw_size_changes = [f['raw_velocity_size'] for f in self.history]
-            feats['velocity_size'] = np.mean(raw_size_changes)  # Overwrite with smoothed value
-
-            # Acceleration: change in smoothed velocity
-            # We need the previous frame's smoothed velocity.
-            # Since we just calculated current, we can try to retrieve prev from history if we stored it,
-            # or re-calculate. For robustness, let's calculate simple change in disp.
-            # Ideally, acc = (vel_t - vel_t-1).
-            # Let's approximate acceleration as the change in instantaneous disp for responsiveness,
-            # or change in smoothed velocity. The prompt asks for "Change in velocity".
-            # Let's look at the previous 'velocity_disp' (if we had calculated it).
-            # Simpler approach used in lightweight ML:
-            feats['acceleration_disp'] = disps[-1] - disps[-2] # diff of disp
-        else:
-            feats['velocity_disp'] = feats['disp']
-            # feats['velocity_size'] remains instantaneous for first frame
-            feats['acceleration_disp'] = 0.0
-
-        # Return vector in exact order required by model
         return self._pack_features(feats)
-
-    def process_csv_row(self, row, prev_row=None):
-        """
-        Helper to regenerate features from raw CSV if needed,
-        ensuring parity if re-training from raw coords.
-        (Omitted for brevity, assumes CSV is already feature-engineered
-        OR this class is used to generate the CSV).
-        """
-        pass
 
     def _pack_features(self, feats_dict):
         """Ensure consistent column order for the model."""
-        # ORDER MUST MATCH TRAIN_GPU.PY
+        # ORDER MUST MATCH TARGET_COLS in train_gpu.py
         return np.array([
             feats_dict.get('tip2dip', 0),
             feats_dict.get('tip2pip', 0),
