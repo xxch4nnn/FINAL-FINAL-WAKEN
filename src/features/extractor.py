@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from collections import deque
 
@@ -18,18 +19,18 @@ class HandFeatureExtractor:
 
     def _to_pixel(self, landmark):
         """Converts normalized MediaPipe landmark to pixel coordinates."""
-        return np.array([
+        return (
             int(landmark.x * self.ref_width),
             int(landmark.y * self.ref_height)
-        ])
+        )
 
     def _get_euclidean(self, p1, p2):
         """Matches the prompt's int-cast logic: int(p1[0]-p2[0])**2 ..."""
-        # p1 and p2 are already numpy arrays of pixels from _to_pixel
+        # p1 and p2 are now tuples of pixels from _to_pixel
         # We cast the difference to int as per "reference logic"
         dx = int(p1[0] - p2[0])
         dy = int(p1[1] - p2[1])
-        return np.sqrt(dx**2 + dy**2)
+        return math.hypot(dx, dy)
 
     def process_live(self, landmarks, distance_cm=115.0):
         """
