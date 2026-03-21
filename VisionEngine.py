@@ -25,14 +25,14 @@ class ThreadedCamera:
     def __init__(self, src=0):
         self.capture = cv2.VideoCapture(src)
         self.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-        
+
         self.lock = threading.Lock()
         self._frame = None
         self.running = True
-        
+
         success, frame = self.capture.read()
         if success: self._frame = frame
-        
+
         self.thread = threading.Thread(target=self._update, daemon=True)
         self.thread.start()
 
@@ -153,12 +153,12 @@ class CalibrationWizard:
 class VisionEngine:
     def __init__(self, src=0):
         self.cam = ThreadedCamera(src)
-        
+
         # --- ARUCO CONFIG ---
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
         self.params = aruco.DetectorParameters()
         self.detector = aruco.ArucoDetector(self.aruco_dict, self.params)
-        
+
         # --- MEDIAPIPE CONFIG ---
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
@@ -168,7 +168,7 @@ class VisionEngine:
             min_tracking_confidence=0.7
         )
         self.mp_draw = mp.solutions.drawing_utils
-        
+
         # --- CALIBRATION ---
         self.calibration = CalibrationWizard()
 
@@ -180,7 +180,7 @@ class VisionEngine:
             [s, s, 0],    # Bot-Right
             [0, s, 0]     # Bot-Left
         ], dtype=np.float32)
-        
+
         # 2. Piano Grid Points
         self.piano_points, self.key_lines = self._generate_piano_points()
 
@@ -191,18 +191,18 @@ class VisionEngine:
         end_x = start_x + total_width
         y_top = 0.0
         y_bot = CONFIG['KEY_HEIGHT']
-        
+
         outline = np.array([
             [start_x, y_top, 0], [end_x, y_top, 0],
             [end_x, y_bot, 0], [start_x, y_bot, 0]
         ], dtype=np.float32)
-        
+
         lines = []
         for i in range(1, CONFIG['NUM_KEYS']):
             x = start_x + (i * CONFIG['KEY_WIDTH'])
             lines.append([x, y_top, 0])
             lines.append([x, y_bot, 0])
-            
+
         return outline, np.array(lines, dtype=np.float32)
 
     def estimate_intrinsics(self, w, h):
@@ -248,7 +248,7 @@ class VisionEngine:
         # Let's use the MediaPipe 'z' (normalized or world) carefully.
         # MP World Landmarks: Origin is approx hip/center? No, it's the wrist (usually).
         # MP Standard Landmarks: Z is relative to wrist, scale is approx image width.
-        
+
         # Let's stick to the RELATIVE DEPTH logic requested in Phase 2.5 Part 1,
         # but the Part 3 says "Vision Engine has a superpower... ArUco Plane... Calculate Distance".
         # If we assume the camera is overhead, the "Plane Distance" is effectively the depth difference.
@@ -303,20 +303,20 @@ class VisionEngine:
 
     def run(self):
         print("Starting Vision Engine (Digital Twin + Calibration)...")
-        
+
         try:
             while True:
                 frame = self.cam.read()
                 if frame is None: continue
-                
+
                 h, w = frame.shape[:2]
                 cam_mat = self.estimate_intrinsics(w, h)
                 dist = np.zeros((4,1))
-                
+
                 # 1. ArUco
                 corners, ids, _ = self.detector.detectMarkers(frame)
                 plane_found = False
-                
+
                 if ids is not None:
                     ids_flat = ids.flatten()
                     if 0 in ids_flat:
@@ -330,10 +330,10 @@ class VisionEngine:
                 # 2. MediaPipe Hands
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = self.hands.process(frame_rgb)
-                
+
                 current_rel_depth = 0.0
                 hand_detected = False
-                
+
                 if results.multi_hand_landmarks:
                     hand_detected = True
                     for hand_landmarks in results.multi_hand_landmarks:
@@ -376,13 +376,17 @@ class VisionEngine:
 
                         cv2.putText(frame, state, (w-200, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 3)
 
+                # Keyboard Hints
+                hints = "'q': Quit | 'c': Calibrate | 'SPACE': Next Step"
+                cv2.putText(frame, hints, (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
+
                 cv2.imshow("Vision Engine", frame)
 
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'): break
                 if key == ord('c'): self.calibration.start()
                 if key == ord(' '): self.calibration.next_step()
-                
+
         finally:
             self.cam.stop()
             cv2.destroyAllWindows()
