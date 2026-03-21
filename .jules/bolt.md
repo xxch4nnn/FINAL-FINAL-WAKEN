@@ -1,0 +1,3 @@
+## 2025-03-22 - [Performance Optimization]
+**Learning:** In a performance-focused PR where methods like `_get_euclidean` are called repeatedly (e.g. per-frame live feature extraction), importing standard library modules like `math` inside the method forces the Python interpreter to execute an `IMPORT_NAME` opcode checking `sys.modules` every iteration. This adds unnecessary overhead in a hot loop. Also, avoid committing binary `.pyc` files generated during benchmarking/testing.
+**Action:** Always place module imports at the top of the file to maximize performance. Avoid tracking or committing cache directories like `__pycache__`.
