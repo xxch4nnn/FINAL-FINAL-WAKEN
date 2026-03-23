@@ -1,0 +1,3 @@
+## 2026-03-23 - OpenCV UI Contrast
+**Learning:** When drawing UI text directly onto live camera feeds using OpenCV (`cv2.putText`), the text can become unreadable if the background matches the text color. Standard accessibility contrast ratios are impossible to guarantee.
+**Action:** Always use a "text outline" technique for on-screen displays in computer vision apps. Draw the same text string twice: first with a thick black stroke (e.g., `thickness=4`), then overlay it exactly with a thinner white fill (e.g., `thickness=2`). This ensures the text is legible against any background color or lighting condition.

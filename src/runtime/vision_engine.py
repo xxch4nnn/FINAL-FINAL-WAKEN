@@ -108,6 +108,12 @@ class VisionEngine:
             cv2.putText(frame, f"State: {state_name}", (50, 50),
                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
+            # Controls outline for visibility
+            h, w = frame.shape[:2]
+            hint_text = "Controls: [ESC] Quit"
+            cv2.putText(frame, hint_text, (20, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 4)
+            cv2.putText(frame, hint_text, (20, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
             cv2.imshow('PianoMotion Live', frame)
             if cv2.waitKey(5) & 0xFF == 27:
                 break
