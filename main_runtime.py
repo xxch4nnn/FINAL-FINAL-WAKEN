@@ -581,6 +581,12 @@ def main():
                 
                 last_state = state
             
+            # Keyboard Controls Hint (with outline for accessibility/contrast)
+            vh, vw = vis_frame.shape[:2]
+            hint_text = "Controls: [q] Quit"
+            cv2.putText(vis_frame, hint_text, (10, vh - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 4)
+            cv2.putText(vis_frame, hint_text, (10, vh - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
             cv2.imshow("PianoMotion Final Runtime", vis_frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
