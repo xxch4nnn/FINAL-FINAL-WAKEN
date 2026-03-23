@@ -1,0 +1,3 @@
+## 2024-05-24 - NumPy Overhead in Hot Loops
+**Learning:** Using `numpy.array` instantiation and NumPy functions (like `numpy.sqrt` and `numpy.mean`) inside per-frame hot loops (like feature extraction on live camera feed) introduces significant overhead compared to using native Python tuples and standard library math functions (like `math.hypot`). In this specific codebase, NumPy array creation was a bottleneck.
+**Action:** Replace `numpy.array` with native Python tuples for lightweight coordinate geometry, and use `math.hypot` for distance calculations instead of `numpy.sqrt`. Also, replace `np.mean` with native `sum() / len()` for small lists like the moving average history buffer.
