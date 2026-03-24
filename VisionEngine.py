@@ -346,6 +346,8 @@ class VisionEngine:
 
                         # UI Visualization of Value
                         cv2.putText(frame, f"Rel Depth: {current_rel_depth:.4f}", (10, 120),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 4)
+                        cv2.putText(frame, f"Rel Depth: {current_rel_depth:.4f}", (10, 120),
                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
                 # 3. Calibration Wizard Logic
@@ -353,9 +355,12 @@ class VisionEngine:
                     status_msg = self.calibration.update(current_rel_depth)
                     # Overlay
                     cv2.rectangle(frame, (0, h-60), (w, h), (0, 0, 0), -1)
+                    cv2.putText(frame, status_msg, (20, h-20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 4)
                     cv2.putText(frame, status_msg, (20, h-20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
                 else:
                     # Normal Operation
+                    cv2.putText(frame, f"Threshold: {self.calibration.threshold_z:.4f}", (10, 150),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 4)
                     cv2.putText(frame, f"Threshold: {self.calibration.threshold_z:.4f}", (10, 150),
                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 

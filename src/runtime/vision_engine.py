@@ -105,6 +105,9 @@ class VisionEngine:
 
             # Overlay
             color = (0, 255, 0) if state_idx in [1, 2] else (0, 0, 255)
+            # UI Accessibility: Add thick black outline for contrast
+            cv2.putText(frame, f"State: {state_name}", (50, 50),
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
             cv2.putText(frame, f"State: {state_name}", (50, 50),
                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
