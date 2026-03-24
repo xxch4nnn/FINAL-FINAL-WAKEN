@@ -565,6 +565,8 @@ def main():
                                  key_idx = k_i
                                  
                                  # Visualize Touch
+                                 cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20),
+                                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 4)
                                  cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), 
                                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
                 
@@ -577,6 +579,7 @@ def main():
                 # Visual Feedback of State
                 state_str = ["HOVER", "PRESS", "HOLD", "RELEASE"][state]
                 color = (0, 0, 255) if state == 0 else (0, 255, 0)
+                cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
                 cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
                 
                 last_state = state
