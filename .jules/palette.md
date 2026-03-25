@@ -1,0 +1,3 @@
+## 2024-05-24 - High-Contrast Text for Live Camera AR Interfaces
+**Learning:** In computer vision or AR applications where UI elements are overlaid on live camera feeds, predictable contrast is impossible because the background image changes constantly. Single-color text (like `cv2.putText` with just white or yellow) frequently becomes completely illegible against light backgrounds.
+**Action:** Always apply the "text outline" accessibility pattern: draw a thick black stroke (e.g., thickness 4 or 5) first, followed by a thinner inner fill of the actual text color (e.g., thickness 2 or 3) at the exact same coordinates. This guarantees the text will remain legible regardless of the underlying camera feed.
