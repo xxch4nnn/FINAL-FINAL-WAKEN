@@ -1,0 +1,3 @@
+## 2024-03-25 - Avoid NumPy instantiation in tight CV loops
+**Learning:** Re-instantiating `np.array` objects and invoking NumPy math functions (`np.sqrt`, `np.mean`) inside per-frame per-landmark computer vision loops creates significant Python-to-C API overhead. Standard Python native constructs (e.g., tuples instead of `np.array`, `math.hypot` instead of `np.sqrt`, `sum() / len()` instead of `np.mean`) resolve this bottleneck.
+**Action:** Default to Python native `math` and tuple geometry for single-coordinate calculations inside hot loops; only bridge to NumPy for final array construction when the ML model strictly demands it.
