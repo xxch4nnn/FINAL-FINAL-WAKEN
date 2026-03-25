@@ -1,0 +1,4 @@
+## 2024-05-24 - [Insecure Deserialization in XGBoost Model Loading]
+**Vulnerability:** The XGBoost model was being saved and loaded using `joblib.dump` and `pickle.load`. Loading an unverified pickle file can lead to arbitrary code execution (CWE-502), allowing an attacker to run malicious code when the engine starts if they replaced the model file.
+**Learning:** `joblib` and `pickle` are fundamentally insecure for loading files from untrusted sources, even if the file extension is `.pkl`. Machine learning models should be saved and loaded using the framework's native, secure formats (like `.json` for XGBoost) which only contain parameters, not executable code.
+**Prevention:** Always use `model.save_model("model.json")` and `model.load_model("model.json")` for XGBoost. Never use `pickle` or `joblib` unless the data source is absolutely trusted and authenticated, and even then, prefer safer serialization formats like JSON, safetensors, or ONNX whenever possible.
