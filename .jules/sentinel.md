@@ -1,0 +1,4 @@
+## 2024-03-27 - Insecure Machine Learning Model Deserialization
+**Vulnerability:** The application used `joblib.load()` and `pickle.load()` to deserialize `.pkl` machine learning models (`models/rf_model.pkl`). This allows Remote Code Execution (RCE) if a malicious actor provides a crafted pickle file, as Python's pickle module can execute arbitrary code during deserialization.
+**Learning:** Machine learning models are often serialized with `pickle` or `joblib` by default, creating a blind spot. ML artifacts should be treated as untrusted data inputs, not just binary data blobs.
+**Prevention:** Always use secure, language-agnostic serialization formats like JSON (e.g., `model.save_model("model.json")` and `model.load_model("model.json")` in XGBoost) for ML models. Never use `pickle` or `joblib` for loading data from untrusted or unverified sources.
