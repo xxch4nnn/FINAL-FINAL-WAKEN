@@ -15,7 +15,7 @@ A robust computer vision pipeline for classifying piano hand gestures (Hover, Pr
     python src/training/train_gpu.py
     ```
 
-    This will generate `models/rf_model.pkl`.
+    This will generate `models/rf_model.json`.
 
 3.  **Run Live Engine**:
 
