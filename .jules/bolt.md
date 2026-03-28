@@ -1,0 +1,3 @@
+## 2024-05-28 - [Avoid NumPy object instantiation overhead for coordinate geometry in per-frame hot loops]
+**Learning:** For small-scale, high-frequency operations like coordinate tracking (e.g., 2D points, calculating euclidean distance) inside a per-frame computer vision hot loop, the instantiation overhead of creating small NumPy arrays and calling NumPy functions (`np.array`, `np.sqrt`, `np.mean`) can be an order of magnitude slower than native Python alternatives.
+**Action:** Use native Python tuples for 2D coordinates, standard math library functions (like `math.hypot`), and native aggregation (like `sum()/len()`) for small arrays within performance-critical hot loops rather than relying on NumPy.
