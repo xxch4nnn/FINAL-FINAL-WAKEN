@@ -1,0 +1,3 @@
+## 2024-05-24 - High Contrast Text and Keyboard Shortcuts
+**Learning:** Using `cv2.putText` directly with a single color on live video feeds can result in poor contrast and unreadable text. Additionally, explicit hints for keyboard shortcuts like exiting the application are often missed, negatively impacting usability.
+**Action:** Always implement a text outline (drawing text twice: a thick black stroke followed by a thin colored fill) for dynamic video text, and ensure that key bindings have explicit on-screen visual hints to improve accessibility.
