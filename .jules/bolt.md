@@ -1,0 +1,3 @@
+## 2024-05-24 - [Optimize coordinate geometry in hot loop]
+**Learning:** In highly repetitive loops like per-frame tracking (`HandFeatureExtractor.process_live`), using native Python tuples instead of `np.array` avoids significant array instantiation overhead. Furthermore, `math.hypot(dx, dy)` is markedly faster than `np.sqrt(dx**2 + dy**2)`, and simple list aggregation `sum() / len()` is faster than `np.mean()` for small arrays.
+**Action:** Always prefer native python tuples and math standard operations for simple scalars and point coordinates in critical per-frame computer vision or live processing functions. Reserve `numpy` strictly for vectorized bulk data manipulation.
