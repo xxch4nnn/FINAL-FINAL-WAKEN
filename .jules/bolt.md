@@ -1,0 +1,3 @@
+## 2024-05-24 - NumPy Overhead in Hot Loops
+**Learning:** Instantiating NumPy arrays for small, per-frame calculations in a hot loop (like MediaPipe coordinate processing) is an anti-pattern. The instantiation overhead of `np.array` and `np.mean`/`np.sqrt` dwarfs the mathematical computation time for scalar values or small vectors. Native Python tuples and standard library functions like `math.hypot` or simple `sum()/len()` are significantly faster (nearly 10x speedup).
+**Action:** Default to standard library `math` and native types (tuples, lists) for per-frame 2D/3D coordinate arithmetic unless bulk array operations/vectorization can be applied across many frames simultaneously.
