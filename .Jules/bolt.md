@@ -1,0 +1,3 @@
+## 2024-05-24 - Numpy vs Native Python in Hot Loops
+**Learning:** Using numpy array instantiations and small function calls (like `np.mean`, `np.sqrt`) for simple coordinate math inside per-frame hot loops introduces measurable overhead compared to native Python tuples and standard libraries (`math.hypot`, `sum()/len()`). This is particularly pronounced in lightweight feature extractors like `HandFeatureExtractor` running continuously.
+**Action:** Default to standard Python math (`math.hypot`) and native structures (tuples, `sum()/len()`) for small mathematical operations inside high-frequency real-time loops unless bulk vectorization is possible over a large batch.
