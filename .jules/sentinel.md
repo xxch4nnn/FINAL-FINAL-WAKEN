@@ -1,0 +1,4 @@
+## 2024-05-24 - [Insecure Deserialization of ML Model via Pickle/Joblib]
+**Vulnerability:** The machine learning model was being serialized with `joblib.dump` and deserialized with `pickle.load`. These libraries are unsafe for untrusted input as they allow arbitrary code execution upon deserialization.
+**Learning:** Model artifacts must be managed using secure methods to prevent arbitrary code execution when loaded.
+**Prevention:** Always use secure, language-agnostic serialization formats like JSON when saving and loading models. For XGBoost models, utilize the native `save_model` and `load_model` methods with a `.json` extension.
