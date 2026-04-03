@@ -565,6 +565,9 @@ def main():
                                  key_idx = k_i
                                  
                                  # Visualize Touch
+                                 # Add text outline for legibility
+                                 cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20),
+                                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 4)
                                  cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), 
                                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
                 
@@ -577,10 +580,16 @@ def main():
                 # Visual Feedback of State
                 state_str = ["HOVER", "PRESS", "HOLD", "RELEASE"][state]
                 color = (0, 0, 255) if state == 0 else (0, 255, 0)
+                # Text outline for state
+                cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
                 cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
                 
                 last_state = state
             
+            # Keyboard shortcut hint with outline
+            cv2.putText(vis_frame, "[Q] Quit", (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 4)
+            cv2.putText(vis_frame, "[Q] Quit", (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
             cv2.imshow("PianoMotion Final Runtime", vis_frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
