@@ -481,6 +481,11 @@ def main():
 
     logger.info("Starting Main Loop...")
     
+    # ⚡ Bolt optimization: Precompute Camera Intrinsics on the first frame
+    # Avoids continuous instantiation of numpy arrays (K, D) and recalculation per frame
+    # while ensuring it adapts dynamically to the actual camera resolution.
+    K, D = None, None
+
     try:
         while running:
             frame = cam.read()
@@ -491,11 +496,12 @@ def main():
             # Copy for visualization
             vis_frame = frame.copy()
             
-            # 1. Camera Intrinsics (Est)
-            h, w = frame.shape[:2]
-            f = w # Focal length approx
-            K = np.array([[f, 0, w/2], [0, f, h/2], [0, 0, 1]], dtype=np.float32)
-            D = np.zeros((4,1))
+            # 1. Camera Intrinsics (Est) - Computed once
+            if K is None or D is None:
+                h, w = frame.shape[:2]
+                f = w # Focal length approx
+                K = np.array([[f, 0, w/2], [0, f, h/2], [0, 0, 1]], dtype=np.float32)
+                D = np.zeros((4,1))
             
             # 2. ArUco Detection
             corners, ids, _ = aruco_detector.detectMarkers(frame)
