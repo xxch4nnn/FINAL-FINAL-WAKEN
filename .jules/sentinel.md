@@ -1,0 +1,4 @@
+## 2024-04-05 - Insecure Deserialization in ML Model Loading
+**Vulnerability:** The XGBoost machine learning model was being saved and loaded using `joblib` and `pickle` (.pkl format) in `train_gpu.py` and `vision_engine.py`. This introduces a critical insecure deserialization vulnerability allowing arbitrary code execution if a malicious `.pkl` file is loaded.
+**Learning:** Python's native serialization protocols (`pickle`, `joblib`) are not secure against unauthenticated data. Code execution occurs automatically during deserialization.
+**Prevention:** ML models should always use secure formats like `.json` or `.onnx`. For XGBoost, use the native `save_model('model.json')` and `load_model('model.json')` instead of pickling the Python object. Also add a check to refuse `.pkl` file extensions directly when loading models.
