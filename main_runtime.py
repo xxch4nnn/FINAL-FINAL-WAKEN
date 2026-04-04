@@ -479,6 +479,24 @@ def main():
         [0, 0, 0], [s, 0, 0], [s, s, 0], [0, s, 0]
     ], dtype=np.float32)
 
+    # Precompute Camera Intrinsics
+    w_cam = CONFIG['WIDTH']
+    h_cam = CONFIG['HEIGHT']
+    f_cam = w_cam
+    K = np.array([[f_cam, 0, w_cam / 2], [0, f_cam, h_cam / 2], [0, 0, 1]], dtype=np.float32)
+    D = np.zeros((4, 1), dtype=np.float32)
+
+    # Precompute Virtual Keys 3D coordinates (Vectorized)
+    start_x = s + 0.01  # 1cm gap from marker
+    all_keys_3d = []
+    for k in range(CONFIG['NUM_KEYS']):
+        k_x = start_x + (k * CONFIG['KEY_WIDTH'])
+        all_keys_3d.extend([
+            [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
+            [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
+        ])
+    all_keys_3d = np.array(all_keys_3d, dtype=np.float32)
+
     logger.info("Starting Main Loop...")
     
     try:
@@ -491,11 +509,8 @@ def main():
             # Copy for visualization
             vis_frame = frame.copy()
             
-            # 1. Camera Intrinsics (Est)
+            # 1. Camera Intrinsics (Precomputed outside loop to avoid redundant allocation)
             h, w = frame.shape[:2]
-            f = w # Focal length approx
-            K = np.array([[f, 0, w/2], [0, f, h/2], [0, 0, 1]], dtype=np.float32)
-            D = np.zeros((4,1))
             
             # 2. ArUco Detection
             corners, ids, _ = aruco_detector.detectMarkers(frame)
@@ -510,21 +525,10 @@ def main():
                         if success:
                             cv2.drawFrameAxes(vis_frame, K, D, rvec, tvec, 0.05)
                             
-                            # Draw Virtual Keys
-                            # Start from right edge of marker
-                            start_x = s + 0.01 # 1cm gap
-                            for k in range(CONFIG['NUM_KEYS']):
-                                k_x = start_x + (k * CONFIG['KEY_WIDTH'])
-                                
-                                # Project Key bounds
-                                pts_3d = np.array([
-                                    [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
-                                    [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
-                                ], dtype=np.float32)
-                                
-                                pts_2d, _ = cv2.projectPoints(pts_3d, rvec, tvec, K, D)
-                                pts_2d = np.int32(pts_2d).reshape(-1, 2)
-                                cv2.polylines(vis_frame, [pts_2d], True, (255, 255, 0), 1)
+                            # Draw Virtual Keys (Vectorized projection and polyline rendering)
+                            pts_2d, _ = cv2.projectPoints(all_keys_3d, rvec, tvec, K, D)
+                            pts_2d = np.int32(pts_2d).reshape(-1, 4, 2)
+                            cv2.polylines(vis_frame, pts_2d, True, (255, 255, 0), 1)
 
             # 3. Hand Tracking
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

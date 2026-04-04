@@ -1,0 +1,3 @@
+## 2024-04-05 - [Vectorizing OpenCV Rendering]
+**Learning:** Calling `cv2.projectPoints` and `cv2.polylines` repeatedly inside a per-frame hot loop (e.g., 7 times per frame for 7 piano keys) causes significant Python-to-C++ context switching overhead and redundant memory allocations. Static 3D arrays like piano key coordinates do not change relative to the ArUco marker.
+**Action:** Always precompute static 3D coordinate arrays (e.g., all virtual keys grouped into one `np.array`) outside of high-frequency CV loops, and vectorize the OpenCV API calls. Use `reshape` on the 2D projected points to pass a batched array to `cv2.polylines` in a single call.
