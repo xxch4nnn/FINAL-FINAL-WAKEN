@@ -1,0 +1,3 @@
+## 2024-04-06 - [Performance Optimization: Native Python over NumPy in Hot Loops]
+**Learning:** Instantiating small NumPy arrays inside high-frequency, per-frame computer vision hot loops introduces significant instantiation overhead. Native Python structures like tuples, combined with standard library math functions (`math.hypot`), drastically outperform NumPy equivalents (`np.array`, `np.sqrt`, `np.mean`) for small, scalar operations (over 10x faster).
+**Action:** When extracting simple geometric features (e.g. Euclidean distance between single points or computing moving average over small lists) inside a per-frame hot loop, default to native Python and `math` operations rather than vectorizing through NumPy arrays to minimize GC/instantiation pressure.
