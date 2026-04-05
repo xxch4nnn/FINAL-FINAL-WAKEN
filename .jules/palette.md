@@ -1,0 +1,3 @@
+## 2025-04-05 - OpenCV Text Readability and Shortcut Discoverability
+**Learning:** Live camera feeds have highly unpredictable lighting and colors, making standard `cv2.putText` text illegible without a background. Simply changing the color is insufficient. Additionally, headless or bare-bones UIs often leave users confused about how to exit or interact.
+**Action:** Always apply the "text outline" pattern (thick black stroke + thin white/colored fill) for critical UI elements in OpenCV to ensure robust contrast against any background. Furthermore, always render essential keyboard shortcuts (like `[q] Quit`) persistently on-screen to improve interface discoverability. Adding an FPS counter using the same pattern also aids in real-time performance perception.
