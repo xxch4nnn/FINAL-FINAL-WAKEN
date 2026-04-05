@@ -451,6 +451,13 @@ def get_hand_in_aruco_space(hand_norm, rvec, tvec, cam_mat, dist_coeffs):
     except:
         return None
 
+def draw_text_with_outline(img, text, pos, font, scale, color, thickness):
+    """Draws text with a thick black outline for better contrast/visibility."""
+    # Draw outline (black)
+    cv2.putText(img, text, pos, font, scale, (0, 0, 0), thickness + 2)
+    # Draw inner text
+    cv2.putText(img, text, pos, font, scale, color, thickness)
+
 def main():
     # Init Modules
     cam = ThreadedCamera(CONFIG['CAM_ID'])
@@ -481,6 +488,8 @@ def main():
 
     logger.info("Starting Main Loop...")
     
+    prev_frame_time = time.time()
+
     try:
         while running:
             frame = cam.read()
@@ -491,6 +500,11 @@ def main():
             # Copy for visualization
             vis_frame = frame.copy()
             
+            # FPS Calculation
+            current_time = time.time()
+            fps = 1 / (current_time - prev_frame_time) if (current_time - prev_frame_time) > 0 else 0
+            prev_frame_time = current_time
+
             # 1. Camera Intrinsics (Est)
             h, w = frame.shape[:2]
             f = w # Focal length approx
@@ -565,8 +579,8 @@ def main():
                                  key_idx = k_i
                                  
                                  # Visualize Touch
-                                 cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), 
-                                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
+                                 draw_text_with_outline(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20),
+                                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
                 
                 # Trigger Sound
                 if state == 1 and last_state != 1:
@@ -577,10 +591,16 @@ def main():
                 # Visual Feedback of State
                 state_str = ["HOVER", "PRESS", "HOLD", "RELEASE"][state]
                 color = (0, 0, 255) if state == 0 else (0, 255, 0)
-                cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                draw_text_with_outline(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
                 
                 last_state = state
             
+            # Draw persistent keyboard hints
+            draw_text_with_outline(vis_frame, "[q] Quit | [v] Switch Camera", (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+            # Draw FPS
+            draw_text_with_outline(vis_frame, f"FPS: {int(fps)}", (w - 150, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+
             cv2.imshow("PianoMotion Final Runtime", vis_frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
