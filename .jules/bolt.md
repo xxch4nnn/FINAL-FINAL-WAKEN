@@ -1,0 +1,3 @@
+## 2024-05-24 - Coordinate Geometry Optimization in Hot Loops
+**Learning:** Using NumPy arrays for simple 2D coordinate representation inside high-frequency per-frame loops (like MediaPipe live inference) introduces significant overhead due to object instantiation and C-extension context switching. Operations like `np.sqrt` and `np.mean` on very small arrays/lists are slower than native Python equivalents (`math.hypot` and `sum()/len()`).
+**Action:** When implementing coordinate geometry in per-frame hot loops, prefer native Python tuples for representation and standard library modules like `math` for simple aggregations/calculations over NumPy to avoid unnecessary overhead.
