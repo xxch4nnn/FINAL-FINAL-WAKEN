@@ -47,6 +47,12 @@ CONFIG = {
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [PianoMotion] - %(message)s')
 logger = logging.getLogger(__name__)
 
+def draw_text_with_outline(img, text, position, font, scale, text_color, thickness, outline_color=(0, 0, 0), outline_thickness=4):
+    """Draws text with a thick outline for better legibility on complex backgrounds."""
+    cv2.putText(img, text, position, font, scale, outline_color, outline_thickness)
+    cv2.putText(img, text, position, font, scale, text_color, thickness)
+
+
 # --- AUDIO ENGINE ---
 class SoundEngine:
     """
@@ -565,8 +571,8 @@ def main():
                                  key_idx = k_i
                                  
                                  # Visualize Touch
-                                 cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), 
-                                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
+                                 draw_text_with_outline(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20),
+                                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
                 
                 # Trigger Sound
                 if state == 1 and last_state != 1:
@@ -577,10 +583,15 @@ def main():
                 # Visual Feedback of State
                 state_str = ["HOVER", "PRESS", "HOLD", "RELEASE"][state]
                 color = (0, 0, 255) if state == 0 else (0, 255, 0)
-                cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                draw_text_with_outline(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
                 
                 last_state = state
             
+            # Keyboard shortcuts for accessibility
+            frame_h, frame_w = vis_frame.shape[:2]
+            draw_text_with_outline(vis_frame, "[q] Quit | [v] Switch Camera", (10, frame_h - 20),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
             cv2.imshow("PianoMotion Final Runtime", vis_frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
