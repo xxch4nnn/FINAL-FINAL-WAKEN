@@ -16,6 +16,7 @@ import numpy as np
 import mediapipe as mp
 import pygame
 import joblib
+import xgboost as xgb
 import time
 import threading
 import sys
@@ -39,7 +40,7 @@ CONFIG = {
     'DEBOUNCE_FRAMES': 3,
     'MODELS_DIR': Path("Machine_Learning_Course/Data/PianoMotion10M/models"),
     'SCALER_NAME': "scaler.pkl",
-    'MODEL_NAME': "rf_model.pkl",
+    'MODEL_NAME': "rf_model.json",
     'FEATURES_NAME': "selected_features.pkl"
 }
 
@@ -197,7 +198,8 @@ class LiveFeatureExtractor:
             f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']
 
             if m_path.exists() and s_path.exists() and f_path.exists():
-                self.model = joblib.load(m_path)
+                self.model = xgb.XGBClassifier()
+                self.model.load_model(str(m_path))
                 self.scaler = joblib.load(s_path)
                 self.selected_features = joblib.load(f_path)
                 self.has_model = True
