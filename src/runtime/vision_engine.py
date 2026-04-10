@@ -41,6 +41,13 @@ class PianoStateMachine:
         self.prev_state_binary = curr
         return result
 
+def draw_text_with_outline(img, text, pos, font, scale, color, thickness):
+    """Draws text with a thick black outline for better contrast."""
+    # Outline
+    cv2.putText(img, text, pos, font, scale, (0, 0, 0), thickness + 2)
+    # Inner fill
+    cv2.putText(img, text, pos, font, scale, color, thickness)
+
 class VisionEngine:
     def __init__(self, model_path="models/rf_model.pkl"):
         self.extractor = HandFeatureExtractor()
@@ -105,8 +112,12 @@ class VisionEngine:
 
             # Overlay
             color = (0, 255, 0) if state_idx in [1, 2] else (0, 0, 255)
-            cv2.putText(frame, f"State: {state_name}", (50, 50),
-                       cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+            draw_text_with_outline(frame, f"State: {state_name}", (10, 70),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+
+            # UI Shortcuts
+            draw_text_with_outline(frame, "[ESC] Quit", (10, 30),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
             cv2.imshow('PianoMotion Live', frame)
             if cv2.waitKey(5) & 0xFF == 27:
