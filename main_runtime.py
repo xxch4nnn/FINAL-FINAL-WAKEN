@@ -479,6 +479,21 @@ def main():
         [0, 0, 0], [s, 0, 0], [s, s, 0], [0, s, 0]
     ], dtype=np.float32)
 
+    # Pre-compute Virtual Keys 3D geometry
+    # Start from right edge of marker
+    start_x = s + 0.01 # 1cm gap
+    keys_x = start_x + (np.arange(CONFIG['NUM_KEYS']) * CONFIG['KEY_WIDTH'])
+
+    pts_3d_keys_vectorized = np.zeros((CONFIG['NUM_KEYS'] * 4, 3), dtype=np.float32)
+    pts_3d_keys_vectorized[0::4, 0] = keys_x
+    pts_3d_keys_vectorized[0::4, 1] = -0.05
+    pts_3d_keys_vectorized[1::4, 0] = keys_x + CONFIG['KEY_WIDTH']
+    pts_3d_keys_vectorized[1::4, 1] = -0.05
+    pts_3d_keys_vectorized[2::4, 0] = keys_x + CONFIG['KEY_WIDTH']
+    pts_3d_keys_vectorized[2::4, 1] = 0.15
+    pts_3d_keys_vectorized[3::4, 0] = keys_x
+    pts_3d_keys_vectorized[3::4, 1] = 0.15
+
     logger.info("Starting Main Loop...")
     
     try:
@@ -510,21 +525,13 @@ def main():
                         if success:
                             cv2.drawFrameAxes(vis_frame, K, D, rvec, tvec, 0.05)
                             
-                            # Draw Virtual Keys
-                            # Start from right edge of marker
-                            start_x = s + 0.01 # 1cm gap
-                            for k in range(CONFIG['NUM_KEYS']):
-                                k_x = start_x + (k * CONFIG['KEY_WIDTH'])
-                                
-                                # Project Key bounds
-                                pts_3d = np.array([
-                                    [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
-                                    [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
-                                ], dtype=np.float32)
-                                
-                                pts_2d, _ = cv2.projectPoints(pts_3d, rvec, tvec, K, D)
-                                pts_2d = np.int32(pts_2d).reshape(-1, 2)
-                                cv2.polylines(vis_frame, [pts_2d], True, (255, 255, 0), 1)
+                            # Draw Virtual Keys (Vectorized batch projection)
+                            # Project all key points simultaneously to minimize python-to-C++ overhead
+                            pts_2d_batch, _ = cv2.projectPoints(pts_3d_keys_vectorized, rvec, tvec, K, D)
+
+                            # Reshape into a list of polygons for batch drawing
+                            pts_2d_batch = np.int32(pts_2d_batch).reshape(-1, 4, 2)
+                            cv2.polylines(vis_frame, pts_2d_batch, True, (255, 255, 0), 1)
 
             # 3. Hand Tracking
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
