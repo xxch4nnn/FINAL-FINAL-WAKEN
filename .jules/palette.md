@@ -1,0 +1,3 @@
+## 2024-05-24 - High-Contrast Text and Discoverable Shortcuts in OpenCV UI
+**Learning:** Raw `cv2.putText` text can become unreadable depending on the background of a live camera feed. Additionally, users often struggle to discover controls (like switching cameras or calibrating) if they only exist as unprompted CLI keystrokes.
+**Action:** Always render OpenCV text with an outline (a thick black stroke followed by a thinner colored fill) to guarantee contrast against any background. Always render critical keyboard shortcuts explicitly on-screen (e.g. `[q] Quit`) so users know how to interact with the GUI.
