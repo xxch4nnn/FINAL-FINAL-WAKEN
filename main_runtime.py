@@ -15,7 +15,8 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pygame
-import joblib
+import json
+import xgboost as xgb
 import time
 import threading
 import sys
@@ -38,9 +39,9 @@ CONFIG = {
     'PROB_THRESHOLD': 0.5,
     'DEBOUNCE_FRAMES': 3,
     'MODELS_DIR': Path("Machine_Learning_Course/Data/PianoMotion10M/models"),
-    'SCALER_NAME': "scaler.pkl",
-    'MODEL_NAME': "rf_model.pkl",
-    'FEATURES_NAME': "selected_features.pkl"
+    'SCALER_NAME': "scaler.json",
+    'MODEL_NAME': "rf_model.json",
+    'FEATURES_NAME': "selected_features.json"
 }
 
 # Setup Logging
@@ -159,6 +160,13 @@ class ThreadedCamera:
         if self.cap.isOpened():
             self.cap.release()
 
+class JSONScaler:
+    def __init__(self, data):
+        self.mean = np.array(data.get('mean', [0]))
+        self.scale = np.array(data.get('scale', [1]))
+    def transform(self, X):
+        return (np.array(X) - self.mean) / self.scale
+
 # --- LIVE FEATURE EXTRACTOR ---
 class LiveFeatureExtractor:
     """
@@ -197,9 +205,10 @@ class LiveFeatureExtractor:
             f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']
 
             if m_path.exists() and s_path.exists() and f_path.exists():
-                self.model = joblib.load(m_path)
-                self.scaler = joblib.load(s_path)
-                self.selected_features = joblib.load(f_path)
+                self.model = xgb.XGBClassifier()
+                self.model.load_model(m_path)
+                self.scaler = JSONScaler(json.loads(s_path.read_text()))
+                self.selected_features = json.loads(f_path.read_text())
                 self.has_model = True
                 logger.info("ML Models Loaded Successfully.")
             else:

@@ -1,0 +1,4 @@
+## 2024-05-18 - Insecure Model Deserialization via Pickle
+**Vulnerability:** The machine learning model loading in `src/runtime/vision_engine.py` was relying on Python's built-in `pickle.load()` function to deserialize model files ending in `.pkl`.
+**Learning:** `pickle` deserialization is inherently insecure as it can execute arbitrary Python code during the unpickling process, leading to severe Remote Code Execution (RCE) vulnerabilities if a malicious `.pkl` model file is loaded.
+**Prevention:** Always use safe, format-specific methods for loading artifacts (like XGBoost's `load_model` with `.json` formats). Implement strict file suffix checks (e.g., `if p.suffix == '.pkl': raise ValueError(...)`) to explicitly block legacy or unsafe formats.
