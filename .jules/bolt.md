@@ -1,0 +1,3 @@
+## 2024-04-12 - [Python Math vs NumPy for Per-Frame Hot Loops]
+**Learning:** For high-frequency small-scale calculations (like processing a few coordinates per frame), native Python tuples, `math.hypot`, and simple aggregations (`sum()/len()`) execute significantly faster than NumPy arrays (`np.array()`, `np.sqrt`, `np.mean`). NumPy's C-extension overhead and object instantiation cost outweigh its vectorization benefits when operating on very small data points individually.
+**Action:** Use native Python lists/tuples and the `math` module for coordinate geometry and lightweight aggregations inside per-frame computer vision hot loops. Reserve NumPy for batched operations and operations strictly requiring vectorization.
