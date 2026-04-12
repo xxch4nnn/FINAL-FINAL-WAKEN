@@ -1,5 +1,6 @@
-import numpy as np
+import math
 from collections import deque
+import numpy as np
 
 class HandFeatureExtractor:
     """
@@ -18,18 +19,18 @@ class HandFeatureExtractor:
 
     def _to_pixel(self, landmark):
         """Converts normalized MediaPipe landmark to pixel coordinates."""
-        return np.array([
+        return (
             int(landmark.x * self.ref_width),
             int(landmark.y * self.ref_height)
-        ])
+        )
 
     def _get_euclidean(self, p1, p2):
         """Matches the prompt's int-cast logic: int(p1[0]-p2[0])**2 ..."""
-        # p1 and p2 are already numpy arrays of pixels from _to_pixel
+        # p1 and p2 are already tuples of pixels from _to_pixel
         # We cast the difference to int as per "reference logic"
         dx = int(p1[0] - p2[0])
         dy = int(p1[1] - p2[1])
-        return np.sqrt(dx**2 + dy**2)
+        return math.hypot(dx, dy)
 
     def process_live(self, landmarks, distance_cm=115.0):
         """
@@ -88,14 +89,16 @@ class HandFeatureExtractor:
         # 4. Smooth / Rolling Aggregations
         # We need velocity_disp (smoothed disp) and acceleration_disp
         if len(self.history) >= 2:
+            hist_len = len(self.history)
+
             # Simple moving average of 'disp'
-            disps = [f['disp'] for f in self.history]
-            feats['velocity_disp'] = np.mean(disps)
+            sum_disp = sum(f['disp'] for f in self.history)
+            feats['velocity_disp'] = sum_disp / hist_len
 
             # Smooth 'velocity_size' -> MATCHING REQUIREMENT
             # We reconstruct the raw size changes from history to smooth them
-            raw_size_changes = [f['raw_velocity_size'] for f in self.history]
-            feats['velocity_size'] = np.mean(raw_size_changes)  # Overwrite with smoothed value
+            sum_raw_size_changes = sum(f['raw_velocity_size'] for f in self.history)
+            feats['velocity_size'] = sum_raw_size_changes / hist_len  # Overwrite with smoothed value
 
             # Acceleration: change in smoothed velocity
             # We need the previous frame's smoothed velocity.
@@ -106,7 +109,7 @@ class HandFeatureExtractor:
             # or change in smoothed velocity. The prompt asks for "Change in velocity".
             # Let's look at the previous 'velocity_disp' (if we had calculated it).
             # Simpler approach used in lightweight ML:
-            feats['acceleration_disp'] = disps[-1] - disps[-2] # diff of disp
+            feats['acceleration_disp'] = self.history[-1]['disp'] - self.history[-2]['disp'] # diff of disp
         else:
             feats['velocity_disp'] = feats['disp']
             # feats['velocity_size'] remains instantaneous for first frame
