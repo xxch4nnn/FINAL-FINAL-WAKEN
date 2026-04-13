@@ -1,0 +1,3 @@
+## 2024-05-19 - OpenCV Batch Drawing Optimization
+**Learning:** Pre-computing fixed 3D key geometries and using vectorization with `cv2.projectPoints` and batched arrays in `cv2.polylines` allows rendering multiple elements with a single C++ API call, avoiding expensive Python-to-C++ context switching per key in the per-frame hot loop. Instantiating intrinsic camera arrays within the loop also causes redundant garbage collection.
+**Action:** Always precompute invariant OpenCV arrays outside high-frequency processing loops. Reshape projected 2D coordinates `(N, 4, 2)` to pass directly into `cv2.polylines` for batched polygon drawing instead of iterating.
