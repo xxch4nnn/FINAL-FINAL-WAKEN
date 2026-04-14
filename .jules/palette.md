@@ -1,0 +1,3 @@
+## 2024-05-18 - Improve On-Screen Text Legibility and Discoverability
+**Learning:** Text rendered directly over a live camera feed frequently suffers from poor contrast depending on the unpredictable background, rendering critical UI unreadable. Additionally, users often struggle with discoverability of basic controls (like quitting or interacting) when headless apps rely strictly on hidden keyboard inputs.
+**Action:** Implement a `draw_text_with_outline` utility function drawing a thick black outline behind thin white text to guarantee high contrast regardless of the background. Always expose essential keyboard shortcuts (`[q] Quit`, etc.) using this method at the top of the HUD to ensure clear discoverability without cluttering the main interaction area.
