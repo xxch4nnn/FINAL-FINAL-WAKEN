@@ -451,6 +451,14 @@ def get_hand_in_aruco_space(hand_norm, rvec, tvec, cam_mat, dist_coeffs):
     except:
         return None
 
+
+def draw_text_with_outline(img, text, position, font_scale, color, thickness):
+    # Draw thick black outline
+    cv2.putText(img, text, position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 0), thickness + 2)
+    # Draw inner text
+    cv2.putText(img, text, position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness)
+
+
 def main():
     # Init Modules
     cam = ThreadedCamera(CONFIG['CAM_ID'])
@@ -580,8 +588,10 @@ def main():
                 cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
                 
                 last_state = state
-            
+            # Draw Keyboard Shortcuts
+            draw_text_with_outline(vis_frame, "[q] Quit", (10, 30), 0.7, (255, 255, 255), 2)
             cv2.imshow("PianoMotion Final Runtime", vis_frame)
+
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
                 
