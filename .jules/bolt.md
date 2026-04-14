@@ -1,0 +1,3 @@
+## 2024-06-25 - OpenCV Vectorization & Loop Hoisting
+**Learning:** Instantiating NumPy arrays (like camera intrinsics `K` and `D`) and executing sequential OpenCV operations (`cv2.projectPoints`, `cv2.polylines`) inside a high-frequency camera capture loop introduces significant overhead from repeated memory allocation and Python-to-C++ context switching.
+**Action:** Always pre-compute static geometry outside the loop. Combine multiple `cv2.projectPoints` calls into a single batched operation by reshaping coordinate arrays. Hoist camera intrinsic matrix generation and only recompute when the frame shape changes.
