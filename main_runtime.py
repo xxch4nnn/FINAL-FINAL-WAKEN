@@ -479,6 +479,19 @@ def main():
         [0, 0, 0], [s, 0, 0], [s, s, 0], [0, s, 0]
     ], dtype=np.float32)
 
+    # ⚡ Bolt Optimization: Precompute 3D bounds for all keys outside the main loop
+    # to enable vectorized cv2.projectPoints and batched cv2.polylines rendering.
+    # This eliminates per-key Python-to-C++ context switching overhead per frame.
+    start_x = s + 0.01 # 1cm gap from right edge of marker
+    cached_keys_3d_list = []
+    for k in range(CONFIG['NUM_KEYS']):
+        k_x = start_x + (k * CONFIG['KEY_WIDTH'])
+        cached_keys_3d_list.append([
+            [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
+            [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
+        ])
+    cached_keys_3d = np.array(cached_keys_3d_list, dtype=np.float32).reshape(-1, 3)
+
     logger.info("Starting Main Loop...")
     
     try:
@@ -511,20 +524,10 @@ def main():
                             cv2.drawFrameAxes(vis_frame, K, D, rvec, tvec, 0.05)
                             
                             # Draw Virtual Keys
-                            # Start from right edge of marker
-                            start_x = s + 0.01 # 1cm gap
-                            for k in range(CONFIG['NUM_KEYS']):
-                                k_x = start_x + (k * CONFIG['KEY_WIDTH'])
-                                
-                                # Project Key bounds
-                                pts_3d = np.array([
-                                    [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
-                                    [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
-                                ], dtype=np.float32)
-                                
-                                pts_2d, _ = cv2.projectPoints(pts_3d, rvec, tvec, K, D)
-                                pts_2d = np.int32(pts_2d).reshape(-1, 2)
-                                cv2.polylines(vis_frame, [pts_2d], True, (255, 255, 0), 1)
+                            # ⚡ Bolt Optimization: Use precomputed 3D bounds and vectorize projection/rendering
+                            pts_2d, _ = cv2.projectPoints(cached_keys_3d, rvec, tvec, K, D)
+                            pts_2d = np.int32(pts_2d).reshape(CONFIG['NUM_KEYS'], 4, 2)
+                            cv2.polylines(vis_frame, pts_2d, True, (255, 255, 0), 1)
 
             # 3. Hand Tracking
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
