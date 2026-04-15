@@ -1,0 +1,3 @@
+## 2024-05-23 - OpenCV UI Accessibility
+**Learning:** Text rendered with `cv2.putText` over unpredictable live camera feeds often lacks contrast and becomes unreadable. Additionally, hidden CLI keyboard shortcuts (like pressing 'q' to quit) are completely undiscoverable to new users of CV window applications.
+**Action:** Always implement a 'text outline' effect (draw thick black stroke, then thin color fill) for critical UI text. Always explicitly render essential keyboard shortcuts (e.g., `[q] Quit`) on-screen, preferably at the top of the frame to avoid overlap with bottom-heavy visual tracking elements.

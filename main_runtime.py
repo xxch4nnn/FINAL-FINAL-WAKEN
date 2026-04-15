@@ -398,6 +398,12 @@ class LiveFeatureExtractor:
 
 # --- MAIN RUNTIME ---
 
+def draw_text_with_outline(img, text, pos, font, scale, text_color, thickness, outline_color=(0, 0, 0), outline_thickness=None):
+    if outline_thickness is None:
+        outline_thickness = thickness * 2
+    cv2.putText(img, text, pos, font, scale, outline_color, outline_thickness, cv2.LINE_AA)
+    cv2.putText(img, text, pos, font, scale, text_color, thickness, cv2.LINE_AA)
+
 def get_hand_in_aruco_space(hand_norm, rvec, tvec, cam_mat, dist_coeffs):
     """
     Projects the Hand (Normalized) onto the ArUco Plane (Z=0).
@@ -565,8 +571,7 @@ def main():
                                  key_idx = k_i
                                  
                                  # Visualize Touch
-                                 cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), 
-                                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
+                                 draw_text_with_outline(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
                 
                 # Trigger Sound
                 if state == 1 and last_state != 1:
@@ -577,7 +582,8 @@ def main():
                 # Visual Feedback of State
                 state_str = ["HOVER", "PRESS", "HOLD", "RELEASE"][state]
                 color = (0, 0, 255) if state == 0 else (0, 255, 0)
-                cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                draw_text_with_outline(vis_frame, f"State: {state_str}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                draw_text_with_outline(vis_frame, "[q] Quit", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
                 
                 last_state = state
             
