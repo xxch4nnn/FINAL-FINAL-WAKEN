@@ -1,0 +1,4 @@
+## 2024-05-24 - Critical Insecure Deserialization Vulnerability Fixed
+**Vulnerability:** The codebase was susceptible to arbitrary code execution due to insecure deserialization of ML models and artifacts using `pickle` and `joblib`.
+**Learning:** This existed because `pickle` and `joblib` are common and convenient defaults in Python data science workflows for saving objects like scikit-learn models and scalers, often ignoring the security implications when loading untrusted files.
+**Prevention:** Always serialize and deserialize data and models using secure, non-executable formats. Use native `.json` formats provided by ML libraries (e.g., XGBoost's `save_model`/`load_model`) and standard JSON for simpler configuration or state like feature lists and scaling parameters. Explicitly reject `.pkl` files before attempting to load them.
