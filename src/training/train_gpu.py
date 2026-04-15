@@ -1,15 +1,16 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
-import joblib
+import json
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import StandardScaler
 
 # Config
 DATA_PATH = Path("data/main_dataset.csv") # Adjust path as needed
 MODEL_DIR = Path("models")
-MODEL_PATH = MODEL_DIR / "rf_model.pkl" # Naming it pkl for compatibility
+MODEL_PATH = MODEL_DIR / "rf_model.json"
 TARGET_COLS = [
     'tip2dip', 'tip2pip', 'tip2mcp', 'tip2wrist',
     'disp', 'velocity_size', 'velocity_disp', 'acceleration_disp',
@@ -84,6 +85,10 @@ def train():
     print(f"Training on {len(X)} samples with {len(TARGET_COLS)} features.")
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+
     # XGBoost Classifier with GPU support
     # Note: 'gpu_hist' requires GPU. If not available, fallback to 'hist' or 'auto'.
     try:
@@ -112,8 +117,14 @@ def train():
     print(classification_report(y_test, preds))
 
     # Save
-    joblib.dump(clf, MODEL_PATH)
+    clf.save_model(str(MODEL_PATH))
     print(f"Model saved to {MODEL_PATH}")
+
+    with open(MODEL_DIR / "scaler.json", 'w') as f:
+        json.dump({'mean': scaler.mean_.tolist(), 'scale': scaler.scale_.tolist()}, f)
+
+    with open(MODEL_DIR / "selected_features.json", 'w') as f:
+        json.dump(TARGET_COLS, f)
 
 if __name__ == "__main__":
     train()
