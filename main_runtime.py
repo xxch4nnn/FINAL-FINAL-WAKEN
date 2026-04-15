@@ -15,10 +15,11 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pygame
-import joblib
 import time
 import threading
 import sys
+import json
+import xgboost as xgb
 import logging
 from collections import deque
 from pathlib import Path
@@ -38,10 +39,19 @@ CONFIG = {
     'PROB_THRESHOLD': 0.5,
     'DEBOUNCE_FRAMES': 3,
     'MODELS_DIR': Path("Machine_Learning_Course/Data/PianoMotion10M/models"),
-    'SCALER_NAME': "scaler.pkl",
-    'MODEL_NAME': "rf_model.pkl",
-    'FEATURES_NAME': "selected_features.pkl"
+    'SCALER_NAME': "scaler.json",
+    'MODEL_NAME': "rf_model.json",
+    'FEATURES_NAME': "selected_features.json"
 }
+
+class JSONScaler:
+    """Secure replacement for StandardScaler loaded via pickle/joblib."""
+    def __init__(self, stats_dict):
+        self.mean = np.array(stats_dict['mean'])
+        self.scale = np.array(stats_dict['scale'])
+
+    def transform(self, X):
+        return (np.array(X) - self.mean) / self.scale
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [PianoMotion] - %(message)s')
@@ -197,9 +207,19 @@ class LiveFeatureExtractor:
             f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']
 
             if m_path.exists() and s_path.exists() and f_path.exists():
-                self.model = joblib.load(m_path)
-                self.scaler = joblib.load(s_path)
-                self.selected_features = joblib.load(f_path)
+                # Load Model Securely
+                self.model = xgb.XGBClassifier()
+                self.model.load_model(str(m_path))
+
+                # Load Scaler Securely
+                with open(s_path, 'r') as f:
+                    scaler_data = json.load(f)
+                    self.scaler = JSONScaler(scaler_data)
+
+                # Load Features Securely
+                with open(f_path, 'r') as f:
+                    self.selected_features = json.load(f)
+
                 self.has_model = True
                 logger.info("ML Models Loaded Successfully.")
             else:
