@@ -1,0 +1,3 @@
+## 2024-05-24 - OpenCV Context Switching Overhead
+**Learning:** Python-to-C++ context switching in per-frame OpenCV loops is a significant source of overhead, particularly when iterating over multiple objects (like virtual piano keys) and calling `cv2.projectPoints` or `cv2.polylines` repeatedly. The C++ OpenCV APIs can handle batched operations far more efficiently.
+**Action:** When rendering multiple similar geometric objects in OpenCV from Python, always precompute their static coordinates outside the hot loop and batch the multiple points into a single NumPy array. Call `cv2.projectPoints` once, then reshape the output to pass to `cv2.polylines` in a single API call without Python-level iteration.
