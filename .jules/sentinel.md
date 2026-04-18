@@ -1,0 +1,4 @@
+## 2024-04-18 - [Insecure Deserialization in ML Artifacts]
+**Vulnerability:** Found `joblib` and `pickle` being used to load machine learning models, scalers, and feature lists. This allows arbitrary code execution via insecure deserialization if a malicious model file is loaded.
+**Learning:** Legacy ML pipelines often use `pickle`/`joblib` for convenience without realizing they are not safe formats for sharing or loading external data. Native XGBoost features exist but were ignored for custom dictionary standard scalers.
+**Prevention:** Always use secure, language-agnostic formats like `.json` for standard scaling arrays and feature lists, and utilize native, secure loading methods like `xgb.XGBClassifier.load_model()` over raw pickling. Add validation to block `.pkl` extensions explicitly at runtime.
