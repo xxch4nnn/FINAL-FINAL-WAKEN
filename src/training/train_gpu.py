@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
-import joblib
+import json
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score, classification_report
 # Config
 DATA_PATH = Path("data/main_dataset.csv") # Adjust path as needed
 MODEL_DIR = Path("models")
-MODEL_PATH = MODEL_DIR / "rf_model.pkl" # Naming it pkl for compatibility
+MODEL_PATH = MODEL_DIR / "rf_model.json"
 TARGET_COLS = [
     'tip2dip', 'tip2pip', 'tip2mcp', 'tip2wrist',
     'disp', 'velocity_size', 'velocity_disp', 'acceleration_disp',
@@ -112,8 +112,22 @@ def train():
     print(classification_report(y_test, preds))
 
     # Save
-    joblib.dump(clf, MODEL_PATH)
+    clf.save_model(MODEL_PATH)
     print(f"Model saved to {MODEL_PATH}")
+
+    # Export scaler format (dummy for now, but matches structure expected by runtime)
+    # The current training script doesn't seem to use sklearn StandardScaler,
+    # but the runtime expects it. Let's create dummy scaler json with 0 mean and 1 scale to maintain parity.
+    scaler_data = {
+        'mean': [0] * len(TARGET_COLS),
+        'scale': [1] * len(TARGET_COLS)
+    }
+    with open(MODEL_DIR / "scaler.json", "w") as f:
+        json.dump(scaler_data, f)
+
+    with open(MODEL_DIR / "selected_features.json", "w") as f:
+        json.dump(TARGET_COLS, f)
+    print("Exported scaler.json and selected_features.json")
 
 if __name__ == "__main__":
     train()
