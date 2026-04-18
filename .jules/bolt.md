@@ -1,0 +1,3 @@
+## 2024-05-20 - [Avoid per-frame Numpy and Camera Matrix initialization]
+**Learning:** In `main_runtime.py`, camera intrinsics (K, D) are currently computed inside the per-frame loop, which represents a known performance bottleneck causing redundant NumPy array instantiation and garbage collection overhead.
+**Action:** Move initialization of static elements, such as the intrinsic camera matrix `K` and distortion coefficients `D`, out of the main per-frame loop to prevent redundant instantiation and garbage collection. Also pre-compute 3D geometry for virtual keys outside the main processing loop to enable vectorized cv2.projectPoints.
