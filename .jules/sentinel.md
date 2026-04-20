@@ -1,0 +1,4 @@
+## 2024-05-24 - [CRITICAL] Insecure Deserialization Vulnerability
+**Vulnerability:** Machine learning artifacts (models, scalers, features) were being saved and loaded using `joblib` and `pickle`. This is an insecure deserialization vulnerability, as loading a malicious `.pkl` or `.joblib` file can result in arbitrary code execution.
+**Learning:** Legacy tutorial practices often use `pickle` and `joblib` for ML pipelines out of convenience without understanding the critical security risks. This app's architecture needs secure data exchange for its models.
+**Prevention:** Strictly prohibit `pickle` and `joblib`. Always serialize ML artifacts using secure, standardized formats such as native XGBoost `.json` for models and the standard `json` module for scalers, feature lists, and configurations. Implement security checks to explicitly block loading of `.pkl` extensions.
