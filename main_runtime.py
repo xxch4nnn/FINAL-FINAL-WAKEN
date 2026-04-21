@@ -479,8 +479,25 @@ def main():
         [0, 0, 0], [s, 0, 0], [s, s, 0], [0, s, 0]
     ], dtype=np.float32)
 
+    # Pre-compute 3D geometry array for virtual keys to enable batched cv2.projectPoints
+    # ⚡ Bolt Optimization: This avoids instantiating 3D point arrays inside the per-frame loop
+    start_x = s + 0.01 # 1cm gap
+    all_keys_3d_list = []
+    for k in range(CONFIG['NUM_KEYS']):
+        k_x = start_x + (k * CONFIG['KEY_WIDTH'])
+        pts_3d = [
+            [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
+            [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
+        ]
+        all_keys_3d_list.append(pts_3d)
+    all_keys_3d = np.array(all_keys_3d_list, dtype=np.float32) # Shape: (NUM_KEYS, 4, 3)
+
     logger.info("Starting Main Loop...")
     
+    # ⚡ Bolt Optimization: Cache camera intrinsics to prevent redundant allocations per-frame
+    cached_shape = None
+    K, D = None, None
+
     try:
         while running:
             frame = cam.read()
@@ -493,9 +510,11 @@ def main():
             
             # 1. Camera Intrinsics (Est)
             h, w = frame.shape[:2]
-            f = w # Focal length approx
-            K = np.array([[f, 0, w/2], [0, f, h/2], [0, 0, 1]], dtype=np.float32)
-            D = np.zeros((4,1))
+            if cached_shape != (h, w):
+                f = w # Focal length approx
+                K = np.array([[f, 0, w/2], [0, f, h/2], [0, 0, 1]], dtype=np.float32)
+                D = np.zeros((4,1))
+                cached_shape = (h, w)
             
             # 2. ArUco Detection
             corners, ids, _ = aruco_detector.detectMarkers(frame)
@@ -511,20 +530,11 @@ def main():
                             cv2.drawFrameAxes(vis_frame, K, D, rvec, tvec, 0.05)
                             
                             # Draw Virtual Keys
-                            # Start from right edge of marker
-                            start_x = s + 0.01 # 1cm gap
-                            for k in range(CONFIG['NUM_KEYS']):
-                                k_x = start_x + (k * CONFIG['KEY_WIDTH'])
-                                
-                                # Project Key bounds
-                                pts_3d = np.array([
-                                    [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
-                                    [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
-                                ], dtype=np.float32)
-                                
-                                pts_2d, _ = cv2.projectPoints(pts_3d, rvec, tvec, K, D)
-                                pts_2d = np.int32(pts_2d).reshape(-1, 2)
-                                cv2.polylines(vis_frame, [pts_2d], True, (255, 255, 0), 1)
+                            # ⚡ Bolt Optimization: Vectorized projection and batched polylines
+                            # Projects all keys at once and reshapes for a single cv2.polylines call
+                            pts_2d, _ = cv2.projectPoints(all_keys_3d.reshape(-1, 3), rvec, tvec, K, D)
+                            pts_2d = np.int32(pts_2d).reshape(CONFIG['NUM_KEYS'], 4, 2)
+                            cv2.polylines(vis_frame, pts_2d, True, (255, 255, 0), 1)
 
             # 3. Hand Tracking
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
