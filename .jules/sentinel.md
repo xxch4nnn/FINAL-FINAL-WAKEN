@@ -1,0 +1,4 @@
+## 2024-05-24 - Insecure Deserialization via pickle/joblib
+**Vulnerability:** The codebase was loading machine learning artifacts (XGBoost models, scalers, and feature lists) using `joblib.load` and `pickle.load` directly from the filesystem without validation.
+**Learning:** `joblib` and `pickle` are fundamentally insecure for loading untrusted data, as they allow arbitrary code execution during deserialization. The model serialization was originally implemented this way for convenience but exposes the system to severe RCE risks if the `.pkl` files are compromised or replaced.
+**Prevention:** Always use secure, language-agnostic formats for artifact serialization where possible. For XGBoost, use its native `.json` model saving/loading methods. For simple objects like scalers or feature lists, implement custom loaders (like `JSONScaler`) using the standard `json` library to prevent code execution.
