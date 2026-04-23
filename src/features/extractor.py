@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from collections import deque
 
@@ -18,18 +19,20 @@ class HandFeatureExtractor:
 
     def _to_pixel(self, landmark):
         """Converts normalized MediaPipe landmark to pixel coordinates."""
-        return np.array([
+        # OPTIMIZATION: Using native tuples instead of np.array to prevent
+        # instantiation overhead in the per-frame hot loop
+        return (
             int(landmark.x * self.ref_width),
             int(landmark.y * self.ref_height)
-        ])
+        )
 
     def _get_euclidean(self, p1, p2):
         """Matches the prompt's int-cast logic: int(p1[0]-p2[0])**2 ..."""
-        # p1 and p2 are already numpy arrays of pixels from _to_pixel
-        # We cast the difference to int as per "reference logic"
-        dx = int(p1[0] - p2[0])
-        dy = int(p1[1] - p2[1])
-        return np.sqrt(dx**2 + dy**2)
+        # OPTIMIZATION: math.hypot is significantly faster than np.sqrt
+        # since we are operating on native Python types rather than arrays
+        dx = p1[0] - p2[0]
+        dy = p1[1] - p2[1]
+        return math.hypot(dx, dy)
 
     def process_live(self, landmarks, distance_cm=115.0):
         """
@@ -90,12 +93,14 @@ class HandFeatureExtractor:
         if len(self.history) >= 2:
             # Simple moving average of 'disp'
             disps = [f['disp'] for f in self.history]
-            feats['velocity_disp'] = np.mean(disps)
+            # OPTIMIZATION: Native sum()/len() is faster than np.mean for small lists
+            feats['velocity_disp'] = sum(disps) / len(disps)
 
             # Smooth 'velocity_size' -> MATCHING REQUIREMENT
             # We reconstruct the raw size changes from history to smooth them
             raw_size_changes = [f['raw_velocity_size'] for f in self.history]
-            feats['velocity_size'] = np.mean(raw_size_changes)  # Overwrite with smoothed value
+            # OPTIMIZATION: Native sum()/len() is faster than np.mean for small lists
+            feats['velocity_size'] = sum(raw_size_changes) / len(raw_size_changes)  # Overwrite with smoothed value
 
             # Acceleration: change in smoothed velocity
             # We need the previous frame's smoothed velocity.
