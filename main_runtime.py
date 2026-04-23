@@ -15,7 +15,8 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pygame
-import joblib
+import json
+import xgboost as xgb
 import time
 import threading
 import sys
@@ -38,9 +39,9 @@ CONFIG = {
     'PROB_THRESHOLD': 0.5,
     'DEBOUNCE_FRAMES': 3,
     'MODELS_DIR': Path("Machine_Learning_Course/Data/PianoMotion10M/models"),
-    'SCALER_NAME': "scaler.pkl",
-    'MODEL_NAME': "rf_model.pkl",
-    'FEATURES_NAME': "selected_features.pkl"
+    'SCALER_NAME': "scaler.json",
+    'MODEL_NAME': "rf_model.json",
+    'FEATURES_NAME': "selected_features.json"
 }
 
 # Setup Logging
@@ -160,6 +161,17 @@ class ThreadedCamera:
             self.cap.release()
 
 # --- LIVE FEATURE EXTRACTOR ---
+class JSONScaler:
+    def __init__(self, means, scales):
+        self.means = np.array(means)
+        self.scales = np.array(scales)
+
+    def transform(self, X):
+        X = np.array(X)
+        # Handle division by zero just in case
+        scales = np.where(self.scales == 0, 1.0, self.scales)
+        return (X - self.means) / scales
+
 class LiveFeatureExtractor:
     """
     Congruent Feature Extractor.
@@ -197,9 +209,19 @@ class LiveFeatureExtractor:
             f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']
 
             if m_path.exists() and s_path.exists() and f_path.exists():
-                self.model = joblib.load(m_path)
-                self.scaler = joblib.load(s_path)
-                self.selected_features = joblib.load(f_path)
+                # Load Model
+                self.model = xgb.XGBClassifier()
+                self.model.load_model(m_path)
+
+                # Load Scaler
+                with open(s_path, 'r') as f:
+                    scaler_data = json.load(f)
+                    self.scaler = JSONScaler(scaler_data.get('means', []), scaler_data.get('scales', []))
+
+                # Load Features
+                with open(f_path, 'r') as f:
+                    self.selected_features = json.load(f)
+
                 self.has_model = True
                 logger.info("ML Models Loaded Successfully.")
             else:
