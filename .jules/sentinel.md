@@ -1,0 +1,4 @@
+## 2024-04-24 - Insecure Deserialization in ML Models
+**Vulnerability:** The codebase was loading machine learning artifacts (`.pkl` and `joblib` files) using `pickle` and `joblib`. These libraries are unsafe as they execute arbitrary code during deserialization.
+**Learning:** `joblib` and `pickle` were likely used for convenience in saving and loading complex Python objects, including models, scalers, and feature lists. However, they pose a critical security risk when used to load untrusted or unverified files.
+**Prevention:** Always use safe serialization formats like `.json` for machine learning artifacts. Utilize native methods (like XGBoost's `.json` saving/loading) and implement custom secure parsers (like a `JSONScaler`) for objects that require it. Explicitly prohibit `.pkl` and `.joblib` loading in the codebase.
