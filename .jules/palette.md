@@ -1,0 +1,3 @@
+## 2024-04-25 - [Accessibility HUD Legibility]
+**Learning:** Raw text on live camera feeds is often unreadable due to varying contrast. Keyboard shortcuts must be explicitly visible and rendered using a high-contrast text outline technique (thick black background stroke, thin white inner fill) to ensure users can discover and act on them safely. HUD elements like keyboard hints should be placed consistently at the top of the frame (`10, 30`) to avoid overlapping dynamically placed status information.
+**Action:** Replace `cv2.putText` with custom `draw_text_with_outline` everywhere. Ensure top-left explicitly documents the primary shortcuts (`Quit`, `Calibrate`, etc.).
