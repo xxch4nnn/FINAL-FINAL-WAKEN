@@ -1,0 +1,3 @@
+## 2024-04-24 - High-Contrast OpenCV Text & Shortcut Discoverability
+**Learning:** Live camera feeds have unpredictable backgrounds, making standard `cv2.putText` text hard to read. Furthermore, headless OpenCV windows lack obvious controls, meaning users don't know how to exit without reading the source code.
+**Action:** Always implement a `draw_text_with_outline` helper function (drawing a thick black background outline before the white text) for all on-screen CV overlays. Also, explicitly render critical keyboard shortcuts (like `[q] Quit` or `[ESC] Quit`) on-screen to make window controls discoverable.
