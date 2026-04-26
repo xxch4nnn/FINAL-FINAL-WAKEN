@@ -1,0 +1,3 @@
+## 2025-04-26 - Vectorizing OpenCV rendering loops
+**Learning:** In high-frequency processing loops (like per-frame CV rendering), calling `cv2.projectPoints` and `cv2.polylines` repeatedly in a Python `for` loop causes significant overhead from Python-to-C++ context switching and redundant array instantiations. Also, repeatedly calculating static parameters like camera intrinsics (`K`, `D`) within the frame loop incurs unnecessary cost.
+**Action:** Always pre-compute static geometries (like 3D key bounds) and camera matrices outside the rendering loop. Reshape arrays to vectorize operations (e.g., passing `(N, 4, 3)` arrays to `cv2.projectPoints` and then `(N, 4, 2)` to `cv2.polylines`) so they execute as a single C++ call.
