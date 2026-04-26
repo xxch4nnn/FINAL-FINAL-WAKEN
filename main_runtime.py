@@ -481,6 +481,36 @@ def main():
 
     logger.info("Starting Main Loop...")
     
+    # 1. Pre-compute Camera Intrinsics and Key Geometry (Hoisted from loop)
+    # Read one frame to guarantee correct dimensions before the loop
+    init_frame = cam.read()
+    while init_frame is None:
+        init_frame = cam.read()
+        import time; time.sleep(0.01)
+
+    h, w = init_frame.shape[:2]
+    f = w # Focal length approx
+    K = np.array([[f, 0, w/2], [0, f, h/2], [0, 0, 1]], dtype=np.float32)
+    D = np.zeros((4,1))
+
+    # Pre-compute 3D coordinates for all keys to batch projectPoints
+    start_x = s + 0.01 # 1cm gap from marker
+    num_keys = CONFIG['NUM_KEYS']
+    k_indices = np.arange(num_keys)
+    k_x = start_x + (k_indices * CONFIG['KEY_WIDTH'])
+
+    # Shape: (NUM_KEYS, 4, 3)
+    pts_3d_batch = np.zeros((num_keys, 4, 3), dtype=np.float32)
+    pts_3d_batch[:, 0, 0] = k_x
+    pts_3d_batch[:, 0, 1] = -0.05
+    pts_3d_batch[:, 1, 0] = k_x + CONFIG['KEY_WIDTH']
+    pts_3d_batch[:, 1, 1] = -0.05
+    pts_3d_batch[:, 2, 0] = k_x + CONFIG['KEY_WIDTH']
+    pts_3d_batch[:, 2, 1] = 0.15
+    pts_3d_batch[:, 3, 0] = k_x
+    pts_3d_batch[:, 3, 1] = 0.15
+    pts_3d_flat = pts_3d_batch.reshape(-1, 3) # Flat for projectPoints
+
     try:
         while running:
             frame = cam.read()
@@ -490,12 +520,6 @@ def main():
                 
             # Copy for visualization
             vis_frame = frame.copy()
-            
-            # 1. Camera Intrinsics (Est)
-            h, w = frame.shape[:2]
-            f = w # Focal length approx
-            K = np.array([[f, 0, w/2], [0, f, h/2], [0, 0, 1]], dtype=np.float32)
-            D = np.zeros((4,1))
             
             # 2. ArUco Detection
             corners, ids, _ = aruco_detector.detectMarkers(frame)
@@ -510,21 +534,11 @@ def main():
                         if success:
                             cv2.drawFrameAxes(vis_frame, K, D, rvec, tvec, 0.05)
                             
-                            # Draw Virtual Keys
-                            # Start from right edge of marker
-                            start_x = s + 0.01 # 1cm gap
-                            for k in range(CONFIG['NUM_KEYS']):
-                                k_x = start_x + (k * CONFIG['KEY_WIDTH'])
-                                
-                                # Project Key bounds
-                                pts_3d = np.array([
-                                    [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
-                                    [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
-                                ], dtype=np.float32)
-                                
-                                pts_2d, _ = cv2.projectPoints(pts_3d, rvec, tvec, K, D)
-                                pts_2d = np.int32(pts_2d).reshape(-1, 2)
-                                cv2.polylines(vis_frame, [pts_2d], True, (255, 255, 0), 1)
+                            # Draw Virtual Keys (Vectorized)
+                            pts_2d, _ = cv2.projectPoints(pts_3d_flat, rvec, tvec, K, D)
+                            if pts_2d is not None:
+                                pts_2d_batch = np.int32(pts_2d).reshape(num_keys, 4, 2)
+                                cv2.polylines(vis_frame, pts_2d_batch, True, (255, 255, 0), 1)
 
             # 3. Hand Tracking
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

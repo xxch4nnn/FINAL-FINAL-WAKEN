@@ -1,0 +1,3 @@
+## 2024-04-26 - Vectorizing OpenCV Rendering and Hoisting Loop Invariants
+**Learning:** High-frequency rendering loops suffer significant performance penalties from per-frame Python-to-C++ context switching and NumPy array instantiation. Instantiating camera intrinsics per-frame and calling `cv2.projectPoints` and `cv2.polylines` repeatedly inside a `for` loop (e.g. for multiple UI elements or virtual keys) is an anti-pattern in this architecture.
+**Action:** Always hoist static object instantiations (like camera parameters and 3D geometry bounds) outside of `while` loops. Vectorize OpenCV operations by batched representations into a single 3D array (`N*4, 3`) and executing a single `cv2.projectPoints` and `cv2.polylines` call.
