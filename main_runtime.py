@@ -15,7 +15,8 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pygame
-import joblib
+import json
+import xgboost as xgb
 import time
 import threading
 import sys
@@ -38,9 +39,9 @@ CONFIG = {
     'PROB_THRESHOLD': 0.5,
     'DEBOUNCE_FRAMES': 3,
     'MODELS_DIR': Path("Machine_Learning_Course/Data/PianoMotion10M/models"),
-    'SCALER_NAME': "scaler.pkl",
-    'MODEL_NAME': "rf_model.pkl",
-    'FEATURES_NAME': "selected_features.pkl"
+    'SCALER_NAME': "scaler.json",
+    'MODEL_NAME': "rf_model.json",
+    'FEATURES_NAME': "selected_features.json"
 }
 
 # Setup Logging
@@ -160,6 +161,20 @@ class ThreadedCamera:
             self.cap.release()
 
 # --- LIVE FEATURE EXTRACTOR ---
+
+class JSONScaler:
+    def __init__(self, path):
+        with open(path, 'r') as f:
+            data = json.load(f)
+        self.mean_ = np.array(data.get('mean_', []))
+        self.scale_ = np.array(data.get('scale_', []))
+
+    def transform(self, X):
+        X = np.array(X)
+        if len(self.mean_) > 0 and len(self.scale_) > 0:
+            return (X - self.mean_) / self.scale_
+        return X
+
 class LiveFeatureExtractor:
     """
     Congruent Feature Extractor.
@@ -189,7 +204,6 @@ class LiveFeatureExtractor:
         ]
 
         self._load_artifacts()
-
     def _load_artifacts(self):
         try:
             m_path = CONFIG['MODELS_DIR'] / CONFIG['MODEL_NAME']
@@ -197,9 +211,11 @@ class LiveFeatureExtractor:
             f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']
 
             if m_path.exists() and s_path.exists() and f_path.exists():
-                self.model = joblib.load(m_path)
-                self.scaler = joblib.load(s_path)
-                self.selected_features = joblib.load(f_path)
+                self.model = xgb.Booster()
+                self.model.load_model(str(m_path))
+                self.scaler = JSONScaler(s_path)
+                with open(f_path, 'r') as f:
+                    self.selected_features = json.load(f)
                 self.has_model = True
                 logger.info("ML Models Loaded Successfully.")
             else:
@@ -207,6 +223,7 @@ class LiveFeatureExtractor:
         except Exception as e:
             logger.error(f"Failed to load ML artifacts: {e}")
             self.has_model = False
+
 
     def update(self, landmarks):
         """
@@ -356,19 +373,24 @@ class LiveFeatureExtractor:
         """
         if feature_vector is None:
             return 0 # Default Hover
-
         if self.has_model:
             try:
                 # Scale
                 X_scaled = self.scaler.transform(feature_vector)
                 # Predict
-                prob = self.model.predict_proba(X_scaled)[0] # (4,)
+                dtest = xgb.DMatrix(X_scaled)
+                # xgb predict returns probabilities for multiclass
+                prob = self.model.predict(dtest)[0]
+                # Assuming prob is a 1D array of shape (4,) for 4 classes
+                if not isinstance(prob, np.ndarray):
+                    prob = np.array([1-prob, prob]) # If binary, format as multiclass for below logic
+
                 pred = np.argmax(prob)
                 
                 # Probability Gating (Optional)
-                if prob[1] > CONFIG['PROB_THRESHOLD']: # Confident Press
+                if len(prob) > 1 and prob[1] > CONFIG['PROB_THRESHOLD']: # Confident Press
                     return 1
-                elif pred == 1 and prob[1] < CONFIG['PROB_THRESHOLD']:
+                elif pred == 1 and len(prob) > 1 and prob[1] < CONFIG['PROB_THRESHOLD']:
                     return 0 # Suppress weak press
                 
                 return pred
