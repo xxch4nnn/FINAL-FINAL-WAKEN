@@ -1,7 +1,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import pickle
+import xgboost as xgb
 from pathlib import Path
 import sys
 
@@ -42,7 +42,7 @@ class PianoStateMachine:
         return result
 
 class VisionEngine:
-    def __init__(self, model_path="models/rf_model.pkl"):
+    def __init__(self, model_path="models/rf_model.json"):
         self.extractor = HandFeatureExtractor()
         self.fsm = PianoStateMachine()
         self.model = self._load_model(model_path)
@@ -55,14 +55,15 @@ class VisionEngine:
             min_detection_confidence=0.7
         )
         self.cap = cv2.VideoCapture(0)
-
     def _load_model(self, path):
         p = Path(path)
         if not p.exists():
             print(f"Warning: Model not found at {p}. Predictions will be dummy.")
             return None
-        with open(p, 'rb') as f:
-            return pickle.load(f)
+        model = xgb.Booster()
+        model.load_model(str(p))
+        return model
+
 
     def run(self):
         print("Starting PianoMotion Vision Engine...")
@@ -87,12 +88,14 @@ class VisionEngine:
                     pred_binary = 0
                     if self.model and features is not None:
                         try:
-                            # XGBoost expects DMatrix or array; sklearn wrapper expects array
-                            pred_binary = int(self.model.predict(features)[0])
-                            # Check if model outputs 0/1 or other labels
-                            # Assuming 0=Hover, 1=Press for binary classifier
+                            # XGBoost expects DMatrix
+                            dtest = xgb.DMatrix(features)
+                            # Assuming binary classification returning probability
+                            prob = self.model.predict(dtest)[0]
+                            pred_binary = 1 if prob > 0.5 else 0
                         except Exception as e:
                             print(f"Inference Error: {e}")
+
 
                     # 3. State Machine
                     state_idx = self.fsm.update(pred_binary)
