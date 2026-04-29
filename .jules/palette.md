@@ -1,0 +1,3 @@
+## 2024-05-29 - Improve OpenCV text contrast and UI discoverability
+**Learning:** Raw `cv2.putText` text can be hard to read against unpredictable live camera feeds. Also, keyboard shortcuts are not easily discoverable to users if not printed on the UI.
+**Action:** Use an 'outline' text approach with black stroke + white text for high contrast. Explicitly display keyboard shortcuts like `[Q] Quit` at the top of the screen in the UI.
