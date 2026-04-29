@@ -1,0 +1,4 @@
+## 2024-05-24 - [Insecure Deserialization via pickle/joblib]
+**Vulnerability:** The application was using `joblib.load()` and `pickle.load()` to deserialize the machine learning models (`rf_model.pkl`), scalers (`scaler.pkl`), and feature lists (`selected_features.pkl`) directly in the main inference engines (`main_runtime.py`, `src/runtime/vision_engine.py`).
+**Learning:** `pickle` and its derivatives like `joblib` are inherently unsafe for loading untrusted data, as they can execute arbitrary code during the deserialization process. This existed because `joblib` is often the default, convenient serialization tool recommended in beginner scikit-learn/XGBoost tutorials.
+**Prevention:** Always use secure, native serialization formats provided by the ML frameworks (e.g., XGBoost's `.json` model format) and standard `json` for configuration and simple data structures (like scaler parameters and feature lists) rather than Python-specific object serialization.
