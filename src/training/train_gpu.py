@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
-import joblib
+import json
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
@@ -9,7 +9,9 @@ from sklearn.metrics import accuracy_score, classification_report
 # Config
 DATA_PATH = Path("data/main_dataset.csv") # Adjust path as needed
 MODEL_DIR = Path("models")
-MODEL_PATH = MODEL_DIR / "rf_model.pkl" # Naming it pkl for compatibility
+MODEL_PATH = MODEL_DIR / "rf_model.json"
+SCALER_PATH = MODEL_DIR / "scaler.json"
+FEATURES_PATH = MODEL_DIR / "selected_features.json"
 TARGET_COLS = [
     'tip2dip', 'tip2pip', 'tip2mcp', 'tip2wrist',
     'disp', 'velocity_size', 'velocity_disp', 'acceleration_disp',
@@ -111,9 +113,24 @@ def train():
     print(f"Model Accuracy: {acc:.4f}")
     print(classification_report(y_test, preds))
 
-    # Save
-    joblib.dump(clf, MODEL_PATH)
+    # Save Model
+    clf.save_model(MODEL_PATH)
     print(f"Model saved to {MODEL_PATH}")
+
+    # Export identity scaler to maintain pipeline consistency
+    # (Since XGBoost can work with raw unscaled data, but main_runtime expects a scaler)
+    identity_scaler = {
+        "means": [0.0] * len(TARGET_COLS),
+        "scales": [1.0] * len(TARGET_COLS)
+    }
+    with open(SCALER_PATH, 'w') as f:
+        json.dump(identity_scaler, f)
+    print(f"Scaler saved to {SCALER_PATH}")
+
+    # Export selected features
+    with open(FEATURES_PATH, 'w') as f:
+        json.dump(TARGET_COLS, f)
+    print(f"Features saved to {FEATURES_PATH}")
 
 if __name__ == "__main__":
     train()
