@@ -1,0 +1,3 @@
+## 2026-04-30 - OpenCV Vectorization and Caching
+**Learning:** Pre-computing static camera intrinsics (K, D) outside of high-frequency video processing loops prevents redundant matrix instantiation overhead. Additionally, `cv2.projectPoints` and `cv2.polylines` can be vectorized: by reshaping multiple 3D polygons into a single array, OpenCV processes them in one C++ context switch, vastly outperforming per-polygon Python iteration loops.
+**Action:** When implementing OpenCV rendering loops, always cache static matrices and vectorize multi-object rendering (like virtual keys/grids) into a single batch API call.
