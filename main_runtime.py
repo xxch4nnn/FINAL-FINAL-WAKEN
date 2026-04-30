@@ -479,6 +479,22 @@ def main():
         [0, 0, 0], [s, 0, 0], [s, s, 0], [0, s, 0]
     ], dtype=np.float32)
 
+    # Pre-compute Virtual Keys 3D Coordinates for vectorized OpenCV projection
+    s = CONFIG['MARKER_SIZE']
+    start_x = s + 0.01 # 1cm gap
+    key_width = CONFIG['KEY_WIDTH']
+    num_keys = CONFIG['NUM_KEYS']
+
+    all_keys_3d = []
+    for k in range(num_keys):
+        k_x = start_x + (k * key_width)
+        all_keys_3d.append([
+            [k_x, -0.05, 0], [k_x + key_width, -0.05, 0],
+            [k_x + key_width, 0.15, 0], [k_x, 0.15, 0]
+        ])
+    # Shape: (NUM_KEYS * 4, 3)
+    pts_3d_batched = np.array(all_keys_3d, dtype=np.float32).reshape(-1, 3)
+
     logger.info("Starting Main Loop...")
     
     try:
@@ -510,21 +526,12 @@ def main():
                         if success:
                             cv2.drawFrameAxes(vis_frame, K, D, rvec, tvec, 0.05)
                             
-                            # Draw Virtual Keys
-                            # Start from right edge of marker
-                            start_x = s + 0.01 # 1cm gap
-                            for k in range(CONFIG['NUM_KEYS']):
-                                k_x = start_x + (k * CONFIG['KEY_WIDTH'])
-                                
-                                # Project Key bounds
-                                pts_3d = np.array([
-                                    [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
-                                    [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
-                                ], dtype=np.float32)
-                                
-                                pts_2d, _ = cv2.projectPoints(pts_3d, rvec, tvec, K, D)
-                                pts_2d = np.int32(pts_2d).reshape(-1, 2)
-                                cv2.polylines(vis_frame, [pts_2d], True, (255, 255, 0), 1)
+                            # Draw Virtual Keys (Vectorized)
+                            # Batched OpenCV calls to avoid Python-to-C++ loop overhead
+                            pts_2d_batched, _ = cv2.projectPoints(pts_3d_batched, rvec, tvec, K, D)
+                            # Reshape to (NUM_KEYS, 4, 2) for cv2.polylines
+                            pts_2d_batched = np.int32(pts_2d_batched).reshape(num_keys, 4, 2)
+                            cv2.polylines(vis_frame, pts_2d_batched, True, (255, 255, 0), 1)
 
             # 3. Hand Tracking
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
