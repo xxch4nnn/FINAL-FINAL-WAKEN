@@ -1,0 +1,4 @@
+## 2024-05-24 - Insecure Deserialization in ML Artifact Loading
+**Vulnerability:** The application was using `joblib.load` and `pickle.load` to deserialize machine learning models, scalers, and feature lists from disk. This is vulnerable to insecure deserialization (RCE) if an attacker can provide a maliciously crafted `.pkl` file.
+**Learning:** Legacy ML saving methods like Pickle and Joblib are fundamentally insecure for loading untrusted data.
+**Prevention:** Always use safe native formats (like XGBoost's `.json` model format) or standard `json` format for simple arrays/objects when saving and loading artifacts. Avoid `pickle`/`joblib` entirely for active model loading.
