@@ -47,6 +47,16 @@ CONFIG = {
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [PianoMotion] - %(message)s')
 logger = logging.getLogger(__name__)
 
+def draw_text_with_outline(img, text, position, font_scale=1.0, text_color=(255, 255, 255), thickness=2):
+    """Draws text with a black outline for better contrast against varied backgrounds."""
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    outline_thickness = thickness + 2
+    outline_color = (0, 0, 0)
+    # Draw outline
+    cv2.putText(img, text, position, font, font_scale, outline_color, outline_thickness, cv2.LINE_AA)
+    # Draw inner text
+    cv2.putText(img, text, position, font, font_scale, text_color, thickness, cv2.LINE_AA)
+
 # --- AUDIO ENGINE ---
 class SoundEngine:
     """
@@ -501,6 +511,8 @@ def main():
             corners, ids, _ = aruco_detector.detectMarkers(frame)
             rvec, tvec = None, None
             
+            draw_text_with_outline(vis_frame, "[q] Quit", (10, 30), font_scale=0.7, text_color=(255, 255, 255), thickness=2)
+
             if ids is not None:
                 cv2.aruco.drawDetectedMarkers(vis_frame, corners, ids)
                 # Find Marker 0
@@ -565,8 +577,8 @@ def main():
                                  key_idx = k_i
                                  
                                  # Visualize Touch
-                                 cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), 
-                                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
+                                 draw_text_with_outline(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20),
+                                             font_scale=0.5, text_color=(0,255,255), thickness=2)
                 
                 # Trigger Sound
                 if state == 1 and last_state != 1:
@@ -577,7 +589,7 @@ def main():
                 # Visual Feedback of State
                 state_str = ["HOVER", "PRESS", "HOLD", "RELEASE"][state]
                 color = (0, 0, 255) if state == 0 else (0, 255, 0)
-                cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                draw_text_with_outline(vis_frame, f"State: {state_str}", (10, 50), font_scale=1.0, text_color=color, thickness=2)
                 
                 last_state = state
             
