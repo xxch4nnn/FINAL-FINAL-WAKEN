@@ -479,6 +479,21 @@ def main():
         [0, 0, 0], [s, 0, 0], [s, s, 0], [0, s, 0]
     ], dtype=np.float32)
 
+    # Pre-compute Virtual Keys 3D Geometry
+    # ⚡ Bolt: Vectorize OpenCV operations to minimize Python-C++ context switching
+    # 💡 What: Precomputing 3D points for all keys instead of per-frame in loop
+    # 🎯 Why: cv2.projectPoints inside a for loop causes massive overhead
+    # 📊 Impact: O(1) projectPoints call instead of O(NUM_KEYS)
+    start_x = s + 0.01 # 1cm gap
+    keys_3d = []
+    for k in range(CONFIG['NUM_KEYS']):
+        k_x = start_x + (k * CONFIG['KEY_WIDTH'])
+        keys_3d.extend([
+            [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
+            [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
+        ])
+    keys_3d_arr = np.array(keys_3d, dtype=np.float32)
+
     logger.info("Starting Main Loop...")
     
     try:
@@ -511,20 +526,13 @@ def main():
                             cv2.drawFrameAxes(vis_frame, K, D, rvec, tvec, 0.05)
                             
                             # Draw Virtual Keys
-                            # Start from right edge of marker
-                            start_x = s + 0.01 # 1cm gap
-                            for k in range(CONFIG['NUM_KEYS']):
-                                k_x = start_x + (k * CONFIG['KEY_WIDTH'])
-                                
-                                # Project Key bounds
-                                pts_3d = np.array([
-                                    [k_x, -0.05, 0], [k_x + CONFIG['KEY_WIDTH'], -0.05, 0],
-                                    [k_x + CONFIG['KEY_WIDTH'], 0.15, 0], [k_x, 0.15, 0]
-                                ], dtype=np.float32)
-                                
-                                pts_2d, _ = cv2.projectPoints(pts_3d, rvec, tvec, K, D)
-                                pts_2d = np.int32(pts_2d).reshape(-1, 2)
-                                cv2.polylines(vis_frame, [pts_2d], True, (255, 255, 0), 1)
+                            # ⚡ Bolt: Vectorize OpenCV operations
+                            # 💡 What: Projecting all pre-computed key points in a single vectorized call
+                            # 🎯 Why: Replaces iterative cv2.projectPoints loop
+                            # 📊 Impact: Batched drawing eliminates per-key overhead
+                            pts_2d_all, _ = cv2.projectPoints(keys_3d_arr, rvec, tvec, K, D)
+                            pts_2d_batched = np.int32(pts_2d_all).reshape(-1, 4, 2)
+                            cv2.polylines(vis_frame, pts_2d_batched, True, (255, 255, 0), 1)
 
             # 3. Hand Tracking
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
