@@ -1,0 +1,3 @@
+## 2026-05-01 - [Vectorize OpenCV Operations]
+**Learning:** Python-to-C++ context switching inside high-frequency processing loops (like video frames) creates a significant performance bottleneck when calling OpenCV functions (like `cv2.projectPoints` and `cv2.polylines`) iteratively for many individual items.
+**Action:** Always precompute static coordinates (like 3D key geometry) outside the main loop and vectorize the OpenCV API calls by batching multiple points into a single array. Reshaping the output of `cv2.projectPoints` allows passing it directly to `cv2.polylines` for rendering multiple polygons in one call.
