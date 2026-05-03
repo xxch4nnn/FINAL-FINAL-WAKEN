@@ -9,6 +9,13 @@ import sys
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 from src.features.extractor import HandFeatureExtractor
 
+
+def draw_text_with_outline(img, text, position, font, scale, color, thickness):
+    # Draw a black outline
+    cv2.putText(img, text, position, font, scale, (0, 0, 0), thickness + 2)
+    # Draw the main text
+    cv2.putText(img, text, position, font, scale, color, thickness)
+
 class PianoStateMachine:
     """
     Converts binary (Hover/Press) predictions into 4-state logic.
@@ -105,9 +112,10 @@ class VisionEngine:
 
             # Overlay
             color = (0, 255, 0) if state_idx in [1, 2] else (0, 0, 255)
-            cv2.putText(frame, f"State: {state_name}", (50, 50),
+            draw_text_with_outline(frame, f"State: {state_name}", (50, 50),
                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
+            draw_text_with_outline(frame, "[ESC] Quit", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             cv2.imshow('PianoMotion Live', frame)
             if cv2.waitKey(5) & 0xFF == 27:
                 break
