@@ -1,0 +1,3 @@
+## 2024-11-20 - High Contrast UI and Discoverability for Live Camera Feeds
+**Learning:** Raw colored text overlaid directly onto dynamic, variable lighting camera feeds frequently fails WCAG contrast requirements, rendering UI state text invisible or unreadable depending on the background. Furthermore, essential keyboard shortcuts required to interact with the vision engines were hidden in the code, breaking accessibility discoverability guidelines.
+**Action:** Always implement a custom `draw_text_with_outline` function to guarantee contrast ratios regardless of the underlying frame, and explicitly render keyboard shortcuts persistently at the top of the viewport (e.g., `(10, 30)`).
