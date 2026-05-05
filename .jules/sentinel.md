@@ -1,0 +1,4 @@
+## 2024-05-04 - Insecure Deserialization Vulnerability
+**Vulnerability:** The application was loading ML artifacts (`rf_model.pkl`, `scaler.pkl`, `selected_features.pkl`) using Python's built-in `pickle` module (via `pickle.load` and `joblib.load`). The `pickle` format is fundamentally insecure and allows arbitrary code execution upon deserialization.
+**Learning:** Legacy scikit-learn models and related artifacts are commonly saved in `.pkl` format. Because standard ML pipelines rely heavily on `joblib` and `pickle`, runtime consumers inherit the vulnerability if they do not migrate to safer serialization formats.
+**Prevention:** Always serialize trained models to secure, code-agnostic formats like `.json` or `.onnx`. We adopted native XGBoost model saving (`.json`) and implemented a custom `JSONScaler` class to reconstruct standard scikit-learn preprocessing states from safe JSON properties.
