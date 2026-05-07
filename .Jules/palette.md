@@ -1,0 +1,3 @@
+## 2024-03-01 - WCAG Contrast for Dynamic Backgrounds
+**Learning:** Raw text overlays (like `cv2.putText`) on camera feeds frequently fail WCAG contrast guidelines due to varying and unpredictable lighting conditions. Keyboard shortcuts for non-standard UI apps (like OpenCV windows) are also poorly discoverable without a persistent HUD.
+**Action:** Always wrap text drawing functions with a black outline (e.g., `thickness + 2` behind the main text) for computer vision applications. Additionally, persistently render available keyboard shortcuts (like Quit, Calibrate, Next Step) at the top of the viewport (e.g., `(10, 30)`) to maintain accessibility.
