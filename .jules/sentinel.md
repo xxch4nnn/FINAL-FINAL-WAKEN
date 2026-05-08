@@ -1,0 +1,4 @@
+## 2024-05-07 - Insecure Deserialization in ML Models
+**Vulnerability:** The codebase was relying on `joblib.load()` and `pickle.load()` to deserialize `.pkl` files containing ML models (`rf_model.pkl`), scalers, and features. These deserialization methods are unsafe as they allow for arbitrary code execution if the artifact is maliciously crafted.
+**Learning:** Legacy scikit-learn ecosystems commonly defaulted to `pickle` and `joblib` for ML artifacts. Modern best practices enforce isolated, structural formats for these artifacts instead.
+**Prevention:** Always serialize strictly using configuration formats like JSON. For models, use native export methods (e.g., XGBoost's `save_model(file.json)`) paired with specific class-loading (e.g., `xgb.XGBClassifier().load_model()`). Do not use Python's raw object serialization for persistent models.
