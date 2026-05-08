@@ -1,0 +1,3 @@
+## 2024-05-18 - High-Contrast Text Overlays and Persistent Shortcuts
+**Learning:** In computer vision applications with variable lighting conditions (like a webcam feed), standard text overlays can become unreadable. Furthermore, headless UI applications with keyboard controls suffer from low discoverability if shortcuts are not persistently visible.
+**Action:** Always wrap text rendering in a high-contrast helper function (e.g., drawing a black outline behind the text to meet WCAG contrast guidelines) and add persistent, top-aligned shortcut hints (`Shortcuts: [Key] Action`) to improve usability.
