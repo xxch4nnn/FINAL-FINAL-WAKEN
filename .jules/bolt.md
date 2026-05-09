@@ -1,0 +1,3 @@
+## 2024-05-09 - [math.hypot over np.sqrt for scalar Euclidean distance]
+**Learning:** In purely Python-native scalar contexts involving calculated variables (like the `int` truncated differences `dx` and `dy`), `math.hypot` outperforms `np.sqrt` by avoiding the overhead of converting to NumPy arrays and invoking the C-API dispatch. Because the `HandFeatureExtractor` processes frame data continuously during runtime, the repeated `np.sqrt` on scalar int pairs constitutes an unnecessary CPU bottleneck. This shift is highly effective in standard Python loops.
+**Action:** Default to `math.hypot` when calculating Euclidean distance purely between basic Python numeric types (ints or floats), and reserve NumPy functions for vectorized operations over `ndarray`s.
