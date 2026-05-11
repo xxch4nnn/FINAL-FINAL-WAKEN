@@ -1,0 +1,3 @@
+## 2026-05-11 - WCAG Contrast & Keyboard Shortcut Discoverability
+**Learning:** In dynamic lighting environments (like camera feeds), standard text overlays often fail WCAG contrast guidelines, making them unreadable. Additionally, users often struggle to discover keyboard shortcuts when they are not persistently visible.
+**Action:** Always use a custom `draw_text_with_outline` function (drawing a black outline behind the text) for text overlays to ensure readability against any background. Additionally, explicitly render on-screen keyboard shortcuts persistently at the top of the viewport (e.g., `(10, 30)`) for discoverability.
