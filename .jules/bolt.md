@@ -1,0 +1,3 @@
+## 2025-03-08 - Use math.hypot for scalar Euclidean distance over np.sqrt
+**Learning:** For 2D Euclidean distance calculations between scalar coordinates (especially after integer casting), `math.hypot(dx, dy)` is significantly more efficient than `np.sqrt(dx**2 + dy**2)`. In pure Python scalar contexts, it bypasses NumPy's C-API dispatch overhead, providing a major performance improvement without changing standard Python float types.
+**Action:** Default to using `math.hypot` from the standard `math` module instead of `np.sqrt` for calculating distances between individual 2D points to save latency in high-frequency loops (e.g., frame-by-frame processing).
