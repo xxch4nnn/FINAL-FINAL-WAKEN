@@ -24,6 +24,12 @@ from collections import deque
 from pathlib import Path
 from scipy.signal import savgol_filter
 
+def draw_text_with_outline(img, text, pos, font_scale=1.0, text_color=(255, 255, 255), thickness=2, font=cv2.FONT_HERSHEY_SIMPLEX):
+    # Outline
+    cv2.putText(img, text, pos, font, font_scale, (0, 0, 0), thickness + 2, cv2.LINE_AA)
+    # Text
+    cv2.putText(img, text, pos, font, font_scale, text_color, thickness, cv2.LINE_AA)
+
 # --- CONFIGURATION ---
 CONFIG = {
     'CAM_ID': 0,
@@ -530,6 +536,8 @@ def main():
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = hands.process(rgb)
             
+            draw_text_with_outline(vis_frame, "Shortcuts: [Q]uit", (10, 30), font_scale=0.7)
+
             if results.multi_hand_landmarks:
                 # Get First Hand
                 lm = results.multi_hand_landmarks[0].landmark
@@ -565,8 +573,8 @@ def main():
                                  key_idx = k_i
                                  
                                  # Visualize Touch
-                                 cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), 
-                                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
+                                 draw_text_with_outline(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20),
+                                             font_scale=0.5, text_color=(0,255,255), thickness=2)
                 
                 # Trigger Sound
                 if state == 1 and last_state != 1:
@@ -577,7 +585,7 @@ def main():
                 # Visual Feedback of State
                 state_str = ["HOVER", "PRESS", "HOLD", "RELEASE"][state]
                 color = (0, 0, 255) if state == 0 else (0, 255, 0)
-                cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                draw_text_with_outline(vis_frame, f"State: {state_str}", (10, 60), font_scale=1, text_color=color, thickness=2)
                 
                 last_state = state
             
