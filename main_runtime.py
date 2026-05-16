@@ -47,6 +47,14 @@ CONFIG = {
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [PianoMotion] - %(message)s')
 logger = logging.getLogger(__name__)
 
+def draw_text_with_outline(img, text, pos, font, scale, color, thickness):
+    """Draws text with a thick black outline for accessibility/contrast."""
+    # Outline
+    cv2.putText(img, text, pos, font, scale, (0, 0, 0), thickness + 2)
+    # Foreground
+    cv2.putText(img, text, pos, font, scale, color, thickness)
+
+
 # --- AUDIO ENGINE ---
 class SoundEngine:
     """
@@ -491,6 +499,8 @@ def main():
             # Copy for visualization
             vis_frame = frame.copy()
             
+            # Persistent Keyboard Shortcuts for Accessibility
+            draw_text_with_outline(vis_frame, "[Q] Quit", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             # 1. Camera Intrinsics (Est)
             h, w = frame.shape[:2]
             f = w # Focal length approx
@@ -565,8 +575,8 @@ def main():
                                  key_idx = k_i
                                  
                                  # Visualize Touch
-                                 cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), 
-                                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
+                                 draw_text_with_outline(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20),
+                                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
                 
                 # Trigger Sound
                 if state == 1 and last_state != 1:
@@ -577,7 +587,7 @@ def main():
                 # Visual Feedback of State
                 state_str = ["HOVER", "PRESS", "HOLD", "RELEASE"][state]
                 color = (0, 0, 255) if state == 0 else (0, 255, 0)
-                cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+                draw_text_with_outline(vis_frame, f"State: {state_str}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
                 
                 last_state = state
             
