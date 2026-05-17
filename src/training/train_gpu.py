@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
-import joblib
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
@@ -9,7 +8,7 @@ from sklearn.metrics import accuracy_score, classification_report
 # Config
 DATA_PATH = Path("data/main_dataset.csv") # Adjust path as needed
 MODEL_DIR = Path("models")
-MODEL_PATH = MODEL_DIR / "rf_model.pkl" # Naming it pkl for compatibility
+MODEL_PATH = MODEL_DIR / "rf_model.json" # Secure JSON format
 TARGET_COLS = [
     'tip2dip', 'tip2pip', 'tip2mcp', 'tip2wrist',
     'disp', 'velocity_size', 'velocity_disp', 'acceleration_disp',
@@ -111,8 +110,8 @@ def train():
     print(f"Model Accuracy: {acc:.4f}")
     print(classification_report(y_test, preds))
 
-    # Save
-    joblib.dump(clf, MODEL_PATH)
+    # Save natively to JSON
+    clf.save_model(str(MODEL_PATH))
     print(f"Model saved to {MODEL_PATH}")
 
 if __name__ == "__main__":

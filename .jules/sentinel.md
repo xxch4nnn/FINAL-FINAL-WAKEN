@@ -1,0 +1,4 @@
+## 2024-05-16 - Insecure Deserialization Vulnerability
+**Vulnerability:** The application was using `joblib` and `pickle` to deserialize machine learning artifacts (models, scalers, and features) from `.pkl` files.
+**Learning:** This is a critical security risk because deserializing untrusted `.pkl` files can lead to arbitrary code execution (ACE). An attacker could tamper with the model files to execute malicious code on the system when the application loads the models.
+**Prevention:** Avoid using `joblib` and `pickle` for model deserialization. Instead, migrate all models and artifacts to secure, text-based formats like `.json`. For XGBoost models, use native `save_model()` and `load_model()` methods. For custom artifacts like scikit-learn scalers, manually extract their attributes (e.g., `mean_`, `scale_`) and save them to JSON, reconstructing them securely at runtime without using `pickle`.
