@@ -47,6 +47,14 @@ CONFIG = {
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [PianoMotion] - %(message)s')
 logger = logging.getLogger(__name__)
 
+def draw_text_with_outline(img, text, position, font, scale, color, thickness):
+    """Draws text with a black outline for better contrast."""
+    x, y = position
+    # Draw outline
+    cv2.putText(img, text, (x, y), font, scale, (0, 0, 0), thickness + 2)
+    # Draw actual text
+    cv2.putText(img, text, (x, y), font, scale, color, thickness)
+
 # --- AUDIO ENGINE ---
 class SoundEngine:
     """
@@ -565,7 +573,7 @@ def main():
                                  key_idx = k_i
                                  
                                  # Visualize Touch
-                                 cv2.putText(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20), 
+                                 draw_text_with_outline(vis_frame, f"Key: {k_i}", (int(lm[8].x*w), int(lm[8].y*h)-20),
                                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,255), 2)
                 
                 # Trigger Sound
@@ -577,7 +585,11 @@ def main():
                 # Visual Feedback of State
                 state_str = ["HOVER", "PRESS", "HOLD", "RELEASE"][state]
                 color = (0, 0, 255) if state == 0 else (0, 255, 0)
-                cv2.putText(vis_frame, f"State: {state_str}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+
+                # Persistent Keyboard Shortcuts
+                draw_text_with_outline(vis_frame, "Shortcuts: [q] Quit", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+                draw_text_with_outline(vis_frame, f"State: {state_str}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
                 
                 last_state = state
             
