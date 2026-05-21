@@ -1,0 +1,3 @@
+## 2024-05-22 - Improved OpenCV Overlay Discoverability and Contrast
+**Learning:** Raw OpenCV text overlays often fail WCAG contrast guidelines against dynamic camera feeds, and users struggle to discover available keyboard shortcuts (like Q for Quit or C for Calibrate) if they aren't persistently displayed on-screen.
+**Action:** Implement a `draw_text_with_outline` helper to draw a 2px black outline behind text for contrast, and persistently render keyboard shortcut hints at the top left of the viewport (e.g., `(10, 30)`), ensuring we don't conflict with existing UI elements at `(10, 50)` or below.
