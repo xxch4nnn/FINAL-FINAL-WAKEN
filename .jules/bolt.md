@@ -1,0 +1,3 @@
+## 2024-05-24 - Faster Scalar Math Avoids NumPy Overhead
+**Learning:** Using `np.sqrt(dx**2 + dy**2)` introduces significant NumPy C-API dispatch overhead when calculating Euclidean distance for pure Python scalar coordinates (e.g., after integer casting). `math.hypot(dx, dy)` bypasses this overhead, resulting in substantial speedup for scalar operations without changing the mathematical output.
+**Action:** Use standard library `math.hypot` instead of `np` functions for simple math on standard Python numerical types like `int` or `float` when working in scalar context to avoid serialization/dispatch overhead.
