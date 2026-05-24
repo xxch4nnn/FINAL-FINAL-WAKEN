@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from collections import deque
 
 class HandFeatureExtractor:
@@ -29,7 +30,8 @@ class HandFeatureExtractor:
         # We cast the difference to int as per "reference logic"
         dx = int(p1[0] - p2[0])
         dy = int(p1[1] - p2[1])
-        return np.sqrt(dx**2 + dy**2)
+        # ⚡ Bolt: Using math.hypot for standard scalars to bypass numpy C-API overhead
+        return math.hypot(dx, dy)
 
     def process_live(self, landmarks, distance_cm=115.0):
         """
