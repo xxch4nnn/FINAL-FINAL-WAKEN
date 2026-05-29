@@ -1,0 +1,4 @@
+## 2024-05-29 - Fixed Insecure Deserialization (CWE-502)
+**Vulnerability:** The application used `joblib` and `pickle` to deserialize ML models, scalers, and feature lists at runtime. This poses a critical risk of Remote Code Execution (RCE) if an attacker can manipulate the serialized files.
+**Learning:** Machine learning artifacts are often serialized with `pickle` by default in tutorials, leading to insecure pipelines when deployed. Standard library models like XGBoost provide secure native serialization methods (`save_model`/`load_model`).
+**Prevention:** Ensure ML pipelines exclusively use secure formats like JSON and framework-specific save/load methods (`.json` or `.ubj`) instead of arbitrary object deserialization. Create custom loader classes like `JSONScaler` for objects that don't have native secure export options.
