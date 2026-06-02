@@ -1,0 +1,4 @@
+## 2024-05-15 - Insecure Deserialization in ML Pipeline
+**Vulnerability:** The application uses `pickle` and `joblib` to deserialize machine learning artifacts (models, scalers, selected features) in `src/runtime/vision_engine.py`, `src/training/train_gpu.py`, and `main_runtime.py`. This is a critical CWE-502 vulnerability that can lead to arbitrary code execution if an attacker replaces the `.pkl` files.
+**Learning:** `pickle` and `joblib` are inherently unsafe for untrusted data. ML models and scalers should be loaded securely using formats like JSON or framework-specific secure loaders (e.g. `xgb.XGBClassifier().load_model()`).
+**Prevention:** Avoid `pickle` and `joblib` entirely. Use `json` for simple artifacts (like features lists or standard scalers) and native secure serializers for complex models.
