@@ -1,9 +1,9 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import pickle
 from pathlib import Path
 import sys
+import xgboost as xgb
 
 # Add project root to path for imports
 sys.path.append(str(Path(__file__).resolve().parents[2]))
@@ -42,7 +42,7 @@ class PianoStateMachine:
         return result
 
 class VisionEngine:
-    def __init__(self, model_path="models/rf_model.pkl"):
+    def __init__(self, model_path="models/rf_model.json"):
         self.extractor = HandFeatureExtractor()
         self.fsm = PianoStateMachine()
         self.model = self._load_model(model_path)
@@ -57,12 +57,13 @@ class VisionEngine:
         self.cap = cv2.VideoCapture(0)
 
     def _load_model(self, path):
-        p = Path(path)
+        p = Path(path).with_suffix('.json')
         if not p.exists():
             print(f"Warning: Model not found at {p}. Predictions will be dummy.")
             return None
-        with open(p, 'rb') as f:
-            return pickle.load(f)
+        model = xgb.XGBClassifier()
+        model.load_model(str(p))
+        return model
 
     def run(self):
         print("Starting PianoMotion Vision Engine...")
