@@ -528,6 +528,8 @@ def main():
 
             # 3. Hand Tracking
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # ⚡ Bolt: Pass by reference to prevent internal copy overhead
+            rgb.flags.writeable = False
             results = hands.process(rgb)
             
             if results.multi_hand_landmarks:
