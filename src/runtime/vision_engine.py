@@ -72,6 +72,8 @@ class VisionEngine:
 
             # Preprocessing
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # ⚡ Bolt: Pass by reference to prevent internal copy overhead
+            image.flags.writeable = False
             results = self.hands.process(image)
 
             state_idx = 0
