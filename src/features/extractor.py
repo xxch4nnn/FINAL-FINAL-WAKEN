@@ -87,15 +87,17 @@ class HandFeatureExtractor:
 
         # 4. Smooth / Rolling Aggregations
         # We need velocity_disp (smoothed disp) and acceleration_disp
-        if len(self.history) >= 2:
+        history_len = len(self.history)
+        if history_len >= 2:
             # Simple moving average of 'disp'
+            # ⚡ Bolt: Use native Python sum()/len() instead of np.mean() for small lists to avoid NumPy overhead
             disps = [f['disp'] for f in self.history]
-            feats['velocity_disp'] = np.mean(disps)
+            feats['velocity_disp'] = sum(disps) / history_len
 
             # Smooth 'velocity_size' -> MATCHING REQUIREMENT
             # We reconstruct the raw size changes from history to smooth them
             raw_size_changes = [f['raw_velocity_size'] for f in self.history]
-            feats['velocity_size'] = np.mean(raw_size_changes)  # Overwrite with smoothed value
+            feats['velocity_size'] = sum(raw_size_changes) / history_len  # Overwrite with smoothed value
 
             # Acceleration: change in smoothed velocity
             # We need the previous frame's smoothed velocity.
