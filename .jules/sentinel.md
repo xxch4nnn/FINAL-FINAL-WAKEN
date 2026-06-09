@@ -1,0 +1,4 @@
+## 2025-02-24 - Fixed Insecure Deserialization Vulnerability (CWE-502)
+**Vulnerability:** The project was loading machine learning artifacts (`.pkl` files) using `pickle` and `joblib`. These libraries are inherently vulnerable to arbitrary code execution if an attacker supplies a crafted serialized file.
+**Learning:** Legacy ML pipelines frequently use `joblib`/`pickle` because it's the easiest way to serialize full Python objects (like `sklearn.preprocessing.StandardScaler` or legacy `XGBClassifier` versions). However, this poses severe security risks when deployed to untrusted environments.
+**Prevention:** Always serialize ML models and scalers into data-only formats. Use XGBoost's native `.save_model()` (which outputs JSON) and explicitly extract necessary mathematical attributes (e.g., `mean_`, `scale_`) from pre-processors to save as standard `.json` instead of dumping the whole Python object.
