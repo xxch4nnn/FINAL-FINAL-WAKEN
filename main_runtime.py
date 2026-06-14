@@ -13,6 +13,7 @@ Features:
 
 import cv2
 import numpy as np
+import math # ⚡ Bolt: Use math.hypot for speed
 import mediapipe as mp
 import pygame
 import joblib
@@ -287,16 +288,16 @@ class LiveFeatureExtractor:
         # Velocity
         feat['finger_vel_x'] = t_v[0]
         feat['finger_vel_y'] = t_v[1]
-        feat['finger_speed'] = np.linalg.norm(t_v)
+        feat['finger_speed'] = math.hypot(t_v[0], t_v[1]) # ⚡ Bolt: Fast scalar math
         
         feat['wrist_vel_x'] = w_v[0]
         feat['wrist_vel_y'] = w_v[1]
-        feat['wrist_speed'] = np.linalg.norm(w_v)
+        feat['wrist_speed'] = math.hypot(w_v[0], w_v[1]) # ⚡ Bolt: Fast scalar math
         
         # Acceleration
         feat['finger_acc_x'] = t_a[0]
         feat['finger_acc_y'] = t_a[1]
-        feat['finger_acc_mag'] = np.linalg.norm(t_a)
+        feat['finger_acc_mag'] = math.hypot(t_a[0], t_a[1]) # ⚡ Bolt: Fast scalar math
         
         # Relative
         feat['rel_finger_pos_x'] = t_p[0] - w_p[0]
@@ -305,9 +306,9 @@ class LiveFeatureExtractor:
         feat['rel_finger_vel_y'] = t_v[1] - w_v[1]
         
         # Distances
-        feat['dist_wrist'] = np.linalg.norm(t_p - w_p)
-        feat['dist_palm'] = np.linalg.norm(t_p - palm_hist[curr, :2])
-        feat['posture_dist'] = np.linalg.norm(t_p - dip_hist[curr, :2])
+        feat['dist_wrist'] = math.hypot(t_p[0] - w_p[0], t_p[1] - w_p[1]) # ⚡ Bolt: Fast scalar math
+        feat['dist_palm'] = math.hypot(t_p[0] - palm_hist[curr, 0], t_p[1] - palm_hist[curr, 1]) # ⚡ Bolt: Fast scalar math
+        feat['posture_dist'] = math.hypot(t_p[0] - dip_hist[curr, 0], t_p[1] - dip_hist[curr, 1]) # ⚡ Bolt: Fast scalar math
         
         # Depth
         feat['rel_depth'] = rel_depth
@@ -315,11 +316,11 @@ class LiveFeatureExtractor:
         # Rolling Averages (Last 5)
         # Buffer slice
         start_idx = max(0, len(self.buffer) - 5)
-        recent_speeds = np.linalg.norm(tip_v[start_idx:], axis=1)
-        recent_accs = np.linalg.norm(tip_a[start_idx:], axis=1)
+        recent_speeds = [math.hypot(v[0], v[1]) for v in tip_v[start_idx:]] # ⚡ Bolt: Fast list comp
+        recent_accs = [math.hypot(a[0], a[1]) for a in tip_a[start_idx:]] # ⚡ Bolt: Fast list comp
         
-        feat['avg_speed'] = np.mean(recent_speeds)
-        feat['avg_acc_mag'] = np.mean(recent_accs)
+        feat['avg_speed'] = sum(recent_speeds) / len(recent_speeds) if recent_speeds else 0.0 # ⚡ Bolt: Fast native mean
+        feat['avg_acc_mag'] = sum(recent_accs) / len(recent_accs) if recent_accs else 0.0 # ⚡ Bolt: Fast native mean
         feat['rolling_var_speed'] = np.var(recent_speeds)
 
         # Lags
@@ -328,7 +329,7 @@ class LiveFeatureExtractor:
         for lag in [2, 4, 6]:
             idx = len(self.buffer) - 1 - lag
             if idx >= 0:
-                feat[f'lag_speed_{lag}'] = np.linalg.norm(tip_v[idx])
+                feat[f'lag_speed_{lag}'] = math.hypot(tip_v[idx][0], tip_v[idx][1]) # ⚡ Bolt: Fast scalar math
             else:
                 feat[f'lag_speed_{lag}'] = 0.0
 
