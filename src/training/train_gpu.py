@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
-import joblib
+
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
@@ -112,8 +112,8 @@ def train():
     print(classification_report(y_test, preds))
 
     # Save
-    joblib.dump(clf, MODEL_PATH)
-    print(f"Model saved to {MODEL_PATH}")
+    clf.save_model(str(MODEL_PATH.with_suffix('.json')))
+    print(f"Model saved to {MODEL_PATH.with_suffix('.json')}")
 
 if __name__ == "__main__":
     train()
