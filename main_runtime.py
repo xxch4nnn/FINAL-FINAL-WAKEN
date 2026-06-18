@@ -15,8 +15,20 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pygame
-import joblib
+import json
+import xgboost as xgb
 import time
+
+class JSONScaler:
+    def __init__(self, path):
+        with open(path, 'r') as f:
+            data = json.load(f)
+        self.mean_ = np.array(data['mean_'])
+        self.scale_ = np.array(data['scale_'])
+
+    def transform(self, X):
+        X_arr = np.asarray(X)
+        return (X_arr - self.mean_) / self.scale_
 import threading
 import sys
 import logging
@@ -192,14 +204,16 @@ class LiveFeatureExtractor:
 
     def _load_artifacts(self):
         try:
-            m_path = CONFIG['MODELS_DIR'] / CONFIG['MODEL_NAME']
-            s_path = CONFIG['MODELS_DIR'] / CONFIG['SCALER_NAME']
-            f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']
+            m_path = (CONFIG['MODELS_DIR'] / CONFIG['MODEL_NAME']).with_suffix('.json')
+            s_path = (CONFIG['MODELS_DIR'] / CONFIG['SCALER_NAME']).with_suffix('.json')
+            f_path = (CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']).with_suffix('.json')
 
             if m_path.exists() and s_path.exists() and f_path.exists():
-                self.model = joblib.load(m_path)
-                self.scaler = joblib.load(s_path)
-                self.selected_features = joblib.load(f_path)
+                self.model = xgb.XGBClassifier()
+                self.model.load_model(str(m_path))
+                self.scaler = JSONScaler(str(s_path))
+                with open(f_path, 'r') as f:
+                    self.selected_features = json.load(f)
                 self.has_model = True
                 logger.info("ML Models Loaded Successfully.")
             else:
