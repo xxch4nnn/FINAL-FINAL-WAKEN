@@ -1,0 +1,3 @@
+## 2025-06-18 - Fast Euclidean and Mean in Python
+**Learning:** Native `math.hypot` is around 3 times faster than `np.sqrt(x**2 + y**2)` for scalar calculations. Native `sum(lst) / len(lst)` is around 30 times faster than `np.mean(lst)` for very small fixed-size Python lists. Because `extractor.py` and `main_runtime.py` calculate these in high-frequency camera frames, relying on standard Python math for scalars and small lists avoids Numpy's type-checking/dispatch overhead.
+**Action:** Replace `np.sqrt` with `math.hypot` in `_get_euclidean` inside `extractor.py`. Replace `np.mean(disps)` and `np.mean(raw_size_changes)` with native summation in `extractor.py`.
