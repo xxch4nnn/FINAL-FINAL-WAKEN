@@ -111,9 +111,10 @@ def train():
     print(f"Model Accuracy: {acc:.4f}")
     print(classification_report(y_test, preds))
 
-    # Save
-    joblib.dump(clf, MODEL_PATH)
-    print(f"Model saved to {MODEL_PATH}")
+    # Save securely
+    json_path = MODEL_PATH.with_suffix('.json')
+    clf.save_model(str(json_path))
+    print(f"Model saved securely to {json_path}")
 
 if __name__ == "__main__":
     train()
