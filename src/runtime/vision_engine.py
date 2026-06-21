@@ -1,7 +1,6 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import pickle
 from pathlib import Path
 import sys
 
@@ -58,11 +57,15 @@ class VisionEngine:
 
     def _load_model(self, path):
         p = Path(path)
+        if p.suffix == '.pkl':
+            p = p.with_suffix('.json')
         if not p.exists():
             print(f"Warning: Model not found at {p}. Predictions will be dummy.")
             return None
-        with open(p, 'rb') as f:
-            return pickle.load(f)
+        import xgboost as xgb
+        model = xgb.XGBClassifier()
+        model.load_model(str(p))
+        return model
 
     def run(self):
         print("Starting PianoMotion Vision Engine...")

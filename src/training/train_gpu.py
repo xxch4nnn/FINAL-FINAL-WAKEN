@@ -1,15 +1,17 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
-import joblib
 from pathlib import Path
 from sklearn.model_selection import train_test_split
+import json
 from sklearn.metrics import accuracy_score, classification_report
 
 # Config
 DATA_PATH = Path("data/main_dataset.csv") # Adjust path as needed
 MODEL_DIR = Path("models")
-MODEL_PATH = MODEL_DIR / "rf_model.pkl" # Naming it pkl for compatibility
+MODEL_PATH = MODEL_DIR / "rf_model.json"
+SCALER_PATH = MODEL_DIR / "scaler.json"
+FEATURES_PATH = MODEL_DIR / "selected_features.json"
 TARGET_COLS = [
     'tip2dip', 'tip2pip', 'tip2mcp', 'tip2wrist',
     'disp', 'velocity_size', 'velocity_disp', 'acceleration_disp',
@@ -111,9 +113,19 @@ def train():
     print(f"Model Accuracy: {acc:.4f}")
     print(classification_report(y_test, preds))
 
-    # Save
-    joblib.dump(clf, MODEL_PATH)
+    # Save Model
+    clf.save_model(str(MODEL_PATH))
     print(f"Model saved to {MODEL_PATH}")
+
+    # Note: If a scaler is used during training, it should be saved securely here.
+    # We will simulate a dummy save for completeness since original didn't use one,
+    # but runtime expects it.
+    with open(SCALER_PATH, 'w') as f:
+        # Dummy scale and mean vectors if not standardizing in script
+        json.dump({'mean_': [0.0]*len(TARGET_COLS), 'scale_': [1.0]*len(TARGET_COLS)}, f)
+
+    with open(FEATURES_PATH, 'w') as f:
+        json.dump(TARGET_COLS, f)
 
 if __name__ == "__main__":
     train()
