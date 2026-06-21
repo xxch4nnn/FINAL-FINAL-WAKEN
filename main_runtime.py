@@ -15,7 +15,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pygame
-import joblib
+import json
 import time
 import threading
 import sys
@@ -46,6 +46,17 @@ CONFIG = {
 # Setup Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [PianoMotion] - %(message)s')
 logger = logging.getLogger(__name__)
+
+class JSONScaler:
+    def __init__(self, path):
+        with open(path, 'r') as f:
+            data = json.load(f)
+            self.mean_ = np.array(data['mean_'])
+            self.scale_ = np.array(data['scale_'])
+
+    def transform(self, X):
+        X = np.asarray(X)
+        return (X - self.mean_) / self.scale_
 
 # --- AUDIO ENGINE ---
 class SoundEngine:
@@ -192,14 +203,17 @@ class LiveFeatureExtractor:
 
     def _load_artifacts(self):
         try:
-            m_path = CONFIG['MODELS_DIR'] / CONFIG['MODEL_NAME']
-            s_path = CONFIG['MODELS_DIR'] / CONFIG['SCALER_NAME']
-            f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']
+            m_path = CONFIG['MODELS_DIR'] / CONFIG['MODEL_NAME'].replace('.pkl', '.json')
+            s_path = CONFIG['MODELS_DIR'] / CONFIG['SCALER_NAME'].replace('.pkl', '.json')
+            f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME'].replace('.pkl', '.json')
 
             if m_path.exists() and s_path.exists() and f_path.exists():
-                self.model = joblib.load(m_path)
-                self.scaler = joblib.load(s_path)
-                self.selected_features = joblib.load(f_path)
+                import xgboost as xgb
+                self.model = xgb.XGBClassifier()
+                self.model.load_model(str(m_path))
+                self.scaler = JSONScaler(s_path)
+                with open(f_path, 'r') as f:
+                    self.selected_features = json.load(f)
                 self.has_model = True
                 logger.info("ML Models Loaded Successfully.")
             else:
