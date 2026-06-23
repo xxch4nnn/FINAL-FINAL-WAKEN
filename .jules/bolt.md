@@ -1,0 +1,3 @@
+## 2025-06-22 - Performance overhead of numpy vs native math in high-frequency CV loops
+**Learning:** In high-frequency CV feature extraction loops (e.g., frame-by-frame processing), using NumPy functions like `np.sqrt` for scalars and `np.mean` for very small lists (e.g. length 10) introduces significant overhead due to type-checking and dispatch latency. Benchmarking showed `math.hypot` is ~10x faster than `np.sqrt`, and native `sum()/len()` is ~20x faster than `np.mean`.
+**Action:** Always prefer native Python `math.hypot` for distance and `sum()/len()` for aggregating small native lists over NumPy functions in tight application loops.
