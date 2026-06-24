@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from collections import deque
 
@@ -27,9 +28,10 @@ class HandFeatureExtractor:
         """Matches the prompt's int-cast logic: int(p1[0]-p2[0])**2 ..."""
         # p1 and p2 are already numpy arrays of pixels from _to_pixel
         # We cast the difference to int as per "reference logic"
+        # ⚡ Bolt: Use math.hypot instead of np.sqrt for faster scalar math
         dx = int(p1[0] - p2[0])
         dy = int(p1[1] - p2[1])
-        return np.sqrt(dx**2 + dy**2)
+        return math.hypot(dx, dy)
 
     def process_live(self, landmarks, distance_cm=115.0):
         """
@@ -90,12 +92,14 @@ class HandFeatureExtractor:
         if len(self.history) >= 2:
             # Simple moving average of 'disp'
             disps = [f['disp'] for f in self.history]
-            feats['velocity_disp'] = np.mean(disps)
+            # ⚡ Bolt: Use native math for faster aggregation on small lists
+            feats['velocity_disp'] = sum(disps) / len(disps)
 
             # Smooth 'velocity_size' -> MATCHING REQUIREMENT
             # We reconstruct the raw size changes from history to smooth them
             raw_size_changes = [f['raw_velocity_size'] for f in self.history]
-            feats['velocity_size'] = np.mean(raw_size_changes)  # Overwrite with smoothed value
+            # ⚡ Bolt: Use native math for faster aggregation on small lists
+            feats['velocity_size'] = sum(raw_size_changes) / len(raw_size_changes)  # Overwrite with smoothed value
 
             # Acceleration: change in smoothed velocity
             # We need the previous frame's smoothed velocity.
