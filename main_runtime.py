@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pygame
+import math
 import joblib
 import time
 import threading
@@ -285,18 +286,19 @@ class LiveFeatureExtractor:
         feat['wrist_pos_y'] = w_p[1]
         
         # Velocity
+        # ⚡ Bolt: Using math.hypot instead of np.linalg.norm for small scalar math is faster
         feat['finger_vel_x'] = t_v[0]
         feat['finger_vel_y'] = t_v[1]
-        feat['finger_speed'] = np.linalg.norm(t_v)
+        feat['finger_speed'] = math.hypot(*t_v)
         
         feat['wrist_vel_x'] = w_v[0]
         feat['wrist_vel_y'] = w_v[1]
-        feat['wrist_speed'] = np.linalg.norm(w_v)
+        feat['wrist_speed'] = math.hypot(*w_v)
         
         # Acceleration
         feat['finger_acc_x'] = t_a[0]
         feat['finger_acc_y'] = t_a[1]
-        feat['finger_acc_mag'] = np.linalg.norm(t_a)
+        feat['finger_acc_mag'] = math.hypot(*t_a)
         
         # Relative
         feat['rel_finger_pos_x'] = t_p[0] - w_p[0]
@@ -305,9 +307,10 @@ class LiveFeatureExtractor:
         feat['rel_finger_vel_y'] = t_v[1] - w_v[1]
         
         # Distances
-        feat['dist_wrist'] = np.linalg.norm(t_p - w_p)
-        feat['dist_palm'] = np.linalg.norm(t_p - palm_hist[curr, :2])
-        feat['posture_dist'] = np.linalg.norm(t_p - dip_hist[curr, :2])
+        # ⚡ Bolt: Using math.dist instead of np.linalg.norm is faster for 2D points
+        feat['dist_wrist'] = math.dist(t_p, w_p)
+        feat['dist_palm'] = math.dist(t_p, palm_hist[curr, :2])
+        feat['posture_dist'] = math.dist(t_p, dip_hist[curr, :2])
         
         # Depth
         feat['rel_depth'] = rel_depth
@@ -315,8 +318,8 @@ class LiveFeatureExtractor:
         # Rolling Averages (Last 5)
         # Buffer slice
         start_idx = max(0, len(self.buffer) - 5)
-        recent_speeds = np.linalg.norm(tip_v[start_idx:], axis=1)
-        recent_accs = np.linalg.norm(tip_a[start_idx:], axis=1)
+        recent_speeds = [math.hypot(v[0], v[1]) for v in tip_v[start_idx:]]
+        recent_accs = [math.hypot(a[0], a[1]) for a in tip_a[start_idx:]]
         
         feat['avg_speed'] = np.mean(recent_speeds)
         feat['avg_acc_mag'] = np.mean(recent_accs)
@@ -328,7 +331,7 @@ class LiveFeatureExtractor:
         for lag in [2, 4, 6]:
             idx = len(self.buffer) - 1 - lag
             if idx >= 0:
-                feat[f'lag_speed_{lag}'] = np.linalg.norm(tip_v[idx])
+                feat[f'lag_speed_{lag}'] = math.hypot(*tip_v[idx])
             else:
                 feat[f'lag_speed_{lag}'] = 0.0
 
