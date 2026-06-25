@@ -15,14 +15,26 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pygame
-import joblib
+import xgboost as xgb
 import time
 import threading
 import sys
+import json
 import logging
 from collections import deque
 from pathlib import Path
 from scipy.signal import savgol_filter
+
+class JSONScaler:
+    def __init__(self, mean_=None, scale_=None):
+        self.mean_ = np.array(mean_) if mean_ is not None else None
+        self.scale_ = np.array(scale_) if scale_ is not None else None
+
+    def transform(self, X):
+        X_arr = np.asarray(X)
+        if self.mean_ is None or self.scale_ is None:
+            return X_arr
+        return (X_arr - self.mean_) / self.scale_
 
 # --- CONFIGURATION ---
 CONFIG = {
@@ -192,14 +204,18 @@ class LiveFeatureExtractor:
 
     def _load_artifacts(self):
         try:
-            m_path = CONFIG['MODELS_DIR'] / CONFIG['MODEL_NAME']
-            s_path = CONFIG['MODELS_DIR'] / CONFIG['SCALER_NAME']
-            f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']
+            m_path = CONFIG['MODELS_DIR'] / CONFIG['MODEL_NAME'].replace('.pkl', '.json')
+            s_path = CONFIG['MODELS_DIR'] / CONFIG['SCALER_NAME'].replace('.pkl', '.json')
+            f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME'].replace('.pkl', '.json')
 
             if m_path.exists() and s_path.exists() and f_path.exists():
-                self.model = joblib.load(m_path)
-                self.scaler = joblib.load(s_path)
-                self.selected_features = joblib.load(f_path)
+                self.model = xgb.XGBClassifier()
+                self.model.load_model(str(m_path))
+                with open(s_path, 'r') as f:
+                    s_data = json.load(f)
+                    self.scaler = JSONScaler(mean_=s_data.get('mean_'), scale_=s_data.get('scale_'))
+                with open(f_path, 'r') as f:
+                    self.selected_features = json.load(f)
                 self.has_model = True
                 logger.info("ML Models Loaded Successfully.")
             else:
