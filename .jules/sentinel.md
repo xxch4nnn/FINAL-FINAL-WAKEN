@@ -1,0 +1,4 @@
+## 2024-05-24 - Fix Insecure Deserialization in VisionEngine
+**Vulnerability:** The `VisionEngine` class was using `pickle.load()` to deserialize `.pkl` files, exposing the application to arbitrary code execution (CWE-502).
+**Learning:** Legacy ML models serialized via `pickle` or `joblib` inherently trust the file contents, posing critical risks in runtime environments where external models could be swapped or tampered with. Additionally, when mitigating by migrating scikit-learn or similar serialized models (e.g. from `joblib`), the target `save_model` behavior depends on the underlying model implementation, so make sure to consider that when converting to safer formats like JSON.
+**Prevention:** Strictly prohibit `pickle`/`joblib` in runtime loading. Instead, securely migrate legacy models to JSON and load them natively via methods like `xgb.XGBClassifier().load_model()`.
