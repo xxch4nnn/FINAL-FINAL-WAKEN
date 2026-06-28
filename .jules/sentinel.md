@@ -1,0 +1,4 @@
+## 2024-06-28 - Insecure Deserialization in ML Pipeline
+**Vulnerability:** Use of `pickle` and `joblib` (which uses pickle under the hood) to load machine learning models from disk. This introduces a critical CWE-502 vulnerability where malicious pickle files could execute arbitrary code upon deserialization.
+**Learning:** Even internal ML artifacts can be swapped or maliciously modified, leading to RCE. XGBoost natively supports saving and loading models using JSON without pickle, which prevents arbitrary code execution.
+**Prevention:** Never use `pickle` or `joblib` for ML models in production. Always serialize to safer formats like JSON or ONNX, or use native framework methods (like `xgboost.Booster.save_model("model.json")`) that do not rely on object serialization for metadata and architecture.
