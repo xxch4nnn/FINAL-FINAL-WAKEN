@@ -1,0 +1,3 @@
+## 2024-05-24 - High-Frequency Loop Bottlenecks
+**Learning:** In high-frequency tight loops (like `LiveFeatureExtractor.extract` running per-frame in `main_runtime.py`), `np.linalg.norm()` is significantly slower (up to 7x) than native Python math operations like `math.hypot()` for small 2D/3D vectors due to NumPy's type checking and function dispatch overhead. Additionally, small NumPy operations like `np.mean` or `np.var` on 5-element arrays are drastically slower (~10x) than native math operations on lists.
+**Action:** Replace small-vector `np.linalg.norm()` calls with `math.hypot()` or `math.dist()` and replace small-array `np.mean()`/`np.var()` with native Python mathematical equivalents for feature extraction in real-time loops.
