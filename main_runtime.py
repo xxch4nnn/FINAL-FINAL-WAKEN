@@ -23,6 +23,7 @@ import logging
 from collections import deque
 from pathlib import Path
 from scipy.signal import savgol_filter
+import math
 
 # --- CONFIGURATION ---
 CONFIG = {
@@ -287,16 +288,19 @@ class LiveFeatureExtractor:
         # Velocity
         feat['finger_vel_x'] = t_v[0]
         feat['finger_vel_y'] = t_v[1]
-        feat['finger_speed'] = np.linalg.norm(t_v)
+        # ⚡ Bolt: Replace np.linalg.norm with math.hypot for faster 2D magnitude computation
+        feat['finger_speed'] = math.hypot(t_v[0], t_v[1])
         
         feat['wrist_vel_x'] = w_v[0]
         feat['wrist_vel_y'] = w_v[1]
-        feat['wrist_speed'] = np.linalg.norm(w_v)
+        # ⚡ Bolt: Replace np.linalg.norm with math.hypot
+        feat['wrist_speed'] = math.hypot(w_v[0], w_v[1])
         
         # Acceleration
         feat['finger_acc_x'] = t_a[0]
         feat['finger_acc_y'] = t_a[1]
-        feat['finger_acc_mag'] = np.linalg.norm(t_a)
+        # ⚡ Bolt: Replace np.linalg.norm with math.hypot
+        feat['finger_acc_mag'] = math.hypot(t_a[0], t_a[1])
         
         # Relative
         feat['rel_finger_pos_x'] = t_p[0] - w_p[0]
@@ -305,9 +309,10 @@ class LiveFeatureExtractor:
         feat['rel_finger_vel_y'] = t_v[1] - w_v[1]
         
         # Distances
-        feat['dist_wrist'] = np.linalg.norm(t_p - w_p)
-        feat['dist_palm'] = np.linalg.norm(t_p - palm_hist[curr, :2])
-        feat['posture_dist'] = np.linalg.norm(t_p - dip_hist[curr, :2])
+        # ⚡ Bolt: Replace np.linalg.norm with math.dist for 2D points
+        feat['dist_wrist'] = math.dist(t_p, w_p)
+        feat['dist_palm'] = math.dist(t_p, palm_hist[curr, :2])
+        feat['posture_dist'] = math.dist(t_p, dip_hist[curr, :2])
         
         # Depth
         feat['rel_depth'] = rel_depth
