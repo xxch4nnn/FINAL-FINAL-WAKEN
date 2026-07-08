@@ -5,6 +5,10 @@ import pickle
 from pathlib import Path
 import sys
 
+def draw_text_with_outline(img, text, position, font, font_scale, color, thickness):
+    cv2.putText(img, text, position, font, font_scale, (0, 0, 0), thickness + 2, cv2.LINE_AA)
+    cv2.putText(img, text, position, font, font_scale, color, thickness, cv2.LINE_AA)
+
 # Add project root to path for imports
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 from src.features.extractor import HandFeatureExtractor
@@ -105,7 +109,7 @@ class VisionEngine:
 
             # Overlay
             color = (0, 255, 0) if state_idx in [1, 2] else (0, 0, 255)
-            cv2.putText(frame, f"State: {state_name}", (50, 50),
+            draw_text_with_outline(frame, f"State: {state_name}", (50, 50),
                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
             cv2.imshow('PianoMotion Live', frame)

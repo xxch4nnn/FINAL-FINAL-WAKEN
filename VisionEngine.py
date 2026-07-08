@@ -8,6 +8,10 @@ from cv2 import aruco
 import mediapipe as mp
 from pathlib import Path
 
+def draw_text_with_outline(img, text, position, font, font_scale, color, thickness):
+    cv2.putText(img, text, position, font, font_scale, (0, 0, 0), thickness + 2, cv2.LINE_AA)
+    cv2.putText(img, text, position, font, font_scale, color, thickness, cv2.LINE_AA)
+
 # --- DIGITAL TWIN CONFIGURATION (MUST MATCH GENERATOR) ---
 CONFIG = {
     'MARKER_SIZE': 200.0,    # 3D Unit = 1 Pixel (Arbitrary scale)
@@ -345,7 +349,7 @@ class VisionEngine:
                         current_rel_depth = hand_landmarks.landmark[8].z - hand_landmarks.landmark[0].z
 
                         # UI Visualization of Value
-                        cv2.putText(frame, f"Rel Depth: {current_rel_depth:.4f}", (10, 120),
+                        draw_text_with_outline(frame, f"Rel Depth: {current_rel_depth:.4f}", (10, 120),
                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
                 # 3. Calibration Wizard Logic
@@ -353,10 +357,10 @@ class VisionEngine:
                     status_msg = self.calibration.update(current_rel_depth)
                     # Overlay
                     cv2.rectangle(frame, (0, h-60), (w, h), (0, 0, 0), -1)
-                    cv2.putText(frame, status_msg, (20, h-20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                    draw_text_with_outline(frame, status_msg, (20, h-20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
                 else:
                     # Normal Operation
-                    cv2.putText(frame, f"Threshold: {self.calibration.threshold_z:.4f}", (10, 150),
+                    draw_text_with_outline(frame, f"Threshold: {self.calibration.threshold_z:.4f}", (10, 150),
                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
                     if hand_detected:
@@ -374,7 +378,7 @@ class VisionEngine:
                              state = "ACTIVE (ML)"
                              color = (0, 255, 0)
 
-                        cv2.putText(frame, state, (w-200, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 3)
+                        draw_text_with_outline(frame, state, (w-200, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 3)
 
                 cv2.imshow("Vision Engine", frame)
 
