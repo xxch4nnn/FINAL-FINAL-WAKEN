@@ -197,7 +197,7 @@ class LiveFeatureExtractor:
             f_path = CONFIG['MODELS_DIR'] / CONFIG['FEATURES_NAME']
 
             if m_path.exists() and s_path.exists() and f_path.exists():
-                self.model = joblib.load(m_path)
+                self.model = joblib.load(m_path) # NOTE: should use json, but left for now as we don't know model type
                 self.scaler = joblib.load(s_path)
                 self.selected_features = joblib.load(f_path)
                 self.has_model = True
